@@ -13,11 +13,13 @@
  */
 
 import type { PlantReference, GrowingMethod, PlantCategory } from '@/types';
+import { plantImages } from './plant-images';
 
 export const seedPlants: PlantReference[] = [
   {
     name: 'Tomato',
     category: 'vegetable',
+    imageUrl: plantImages['Tomato']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 5,
     daysToSeedling: 14,
@@ -37,6 +39,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Lettuce',
     category: 'vegetable',
+    imageUrl: plantImages['Lettuce']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic', 'aeroponic'],
     daysToGermination: 3,
     daysToSeedling: 10,
@@ -56,6 +59,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Basil',
     category: 'herb',
+    imageUrl: plantImages['Basil']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 5,
     daysToSeedling: 14,
@@ -75,6 +79,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Bell Pepper',
     category: 'vegetable',
+    imageUrl: plantImages['Bell Pepper']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 7,
     daysToSeedling: 14,
@@ -94,6 +99,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Cucumber',
     category: 'vegetable',
+    imageUrl: plantImages['Cucumber']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 3,
     daysToSeedling: 10,
@@ -113,6 +119,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Spinach',
     category: 'vegetable',
+    imageUrl: plantImages['Spinach']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 5,
     daysToSeedling: 12,
@@ -132,6 +139,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Kale',
     category: 'vegetable',
+    imageUrl: plantImages['Kale']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 5,
     daysToSeedling: 14,
@@ -151,6 +159,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Carrot',
     category: 'vegetable',
+    imageUrl: plantImages['Carrot']?.url,
     methods: ['soil'],
     daysToGermination: 7,
     daysToSeedling: 14,
@@ -170,6 +179,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Onion',
     category: 'vegetable',
+    imageUrl: plantImages['Onion']?.url,
     methods: ['soil', 'hydroponic'],
     daysToGermination: 7,
     daysToSeedling: 21,
@@ -189,6 +199,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Broccoli',
     category: 'vegetable',
+    imageUrl: plantImages['Broccoli']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 5,
     daysToSeedling: 14,
@@ -208,6 +219,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Thai Basil',
     category: 'herb',
+    imageUrl: plantImages['Thai Basil']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 5,
     daysToSeedling: 14,
@@ -227,6 +239,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Bird Chili',
     category: 'vegetable',
+    imageUrl: plantImages['Bird Chili']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 7,
     daysToSeedling: 14,
@@ -246,6 +259,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Morning Glory',
     category: 'vegetable',
+    imageUrl: plantImages['Morning Glory']?.url,
     methods: ['soil', 'hydroponic'],
     daysToGermination: 3,
     daysToSeedling: 10,
@@ -265,6 +279,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Long Bean',
     category: 'vegetable',
+    imageUrl: plantImages['Long Bean']?.url,
     methods: ['soil', 'hydroponic'],
     daysToGermination: 5,
     daysToSeedling: 12,
@@ -284,6 +299,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Thai Eggplant',
     category: 'vegetable',
+    imageUrl: plantImages['Thai Eggplant']?.url,
     methods: ['soil', 'hydroponic'],
     daysToGermination: 7,
     daysToSeedling: 21,
@@ -303,6 +319,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Bitter Melon',
     category: 'vegetable',
+    imageUrl: plantImages['Bitter Melon']?.url,
     methods: ['soil', 'hydroponic'],
     daysToGermination: 5,
     daysToSeedling: 14,
@@ -322,6 +339,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Marigold',
     category: 'flower',
+    imageUrl: plantImages['Marigold']?.url,
     methods: ['soil', 'hydroponic'],
     daysToGermination: 5,
     daysToSeedling: 10,
@@ -341,6 +359,7 @@ export const seedPlants: PlantReference[] = [
   {
     name: 'Strawberry',
     category: 'fruit',
+    imageUrl: plantImages['Strawberry']?.url,
     methods: ['soil', 'hydroponic', 'aquaponic'],
     daysToGermination: 14,
     daysToSeedling: 21,

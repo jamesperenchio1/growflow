@@ -281,7 +281,7 @@ export default function CalendarPage() {
               Tasks, plantings, and harvests at a glance
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-muted/60 rounded-xl p-1">
+          <div className="flex items-center gap-2 bg-muted rounded-xl p-1">
             <Button
               variant="ghost"
               size="icon"
@@ -386,11 +386,11 @@ export default function CalendarPage() {
                     className={cn(
                       "min-h-[110px] rounded-xl border p-1.5 text-xs transition-all hover:shadow-sm cursor-pointer flex flex-col",
                       isToday
-                        ? "border-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/10"
+                        ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950"
                         : hasHarvestWindow
-                        ? "border-yellow-300/60 dark:border-yellow-700/40 bg-yellow-50/20 dark:bg-yellow-950/5 hover:bg-accent/30"
-                        : "border-border hover:bg-accent/30",
-                      isWeekend && !isToday && "bg-slate-50/50 dark:bg-slate-900/20"
+                        ? "border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950 hover:bg-accent"
+                        : "border-border hover:bg-accent",
+                      isWeekend && !isToday && "bg-slate-50 dark:bg-slate-900"
                     )}
                   >
                     {/* Day number */}
@@ -569,7 +569,7 @@ export default function CalendarPage() {
                 <span className="text-muted-foreground">Today</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="size-3 rounded border border-yellow-300/60 dark:border-yellow-700/40" />
+                <div className="size-3 rounded border border-yellow-300 dark:border-yellow-700" />
                 <span className="text-muted-foreground">Harvest window</span>
               </div>
               {monthStats.overdueTotal > 0 && (
@@ -628,7 +628,7 @@ export default function CalendarPage() {
                         className={cn(
                           "flex items-center gap-2 rounded-lg border px-3 py-2",
                           isOverdue
-                            ? "border-rose-200 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/10"
+                            ? "border-rose-200 bg-rose-50 dark:border-rose-900/30 dark:bg-rose-950"
                             : "border-border bg-card"
                         )}
                       >
@@ -710,7 +710,7 @@ export default function CalendarPage() {
                       onClick={() =>
                         router.push(`/plants/detail?id=${plant.id}`)
                       }
-                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 cursor-pointer hover:bg-accent/30 transition-colors"
+                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
                     >
                       <div className="icon-circle size-7 shrink-0 bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30">
                         <Leaf className="size-3.5" />
@@ -748,7 +748,7 @@ export default function CalendarPage() {
                       onClick={() =>
                         router.push(`/plants/detail?id=${plant.id}`)
                       }
-                      className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50/50 dark:border-yellow-900/30 dark:bg-yellow-950/10 px-3 py-2 cursor-pointer hover:bg-yellow-100/50 transition-colors"
+                      className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900/30 dark:bg-yellow-950 px-3 py-2 cursor-pointer hover:bg-yellow-100 transition-colors"
                     >
                       <div className="icon-circle size-7 shrink-0 bg-yellow-100 text-yellow-600 dark:bg-yellow-950/30">
                         <Scissors className="size-3.5" />

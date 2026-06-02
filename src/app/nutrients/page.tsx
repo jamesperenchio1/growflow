@@ -169,7 +169,7 @@ function SupplyHint({ brand, partName, amountMl }: { brand: string; partName: st
   if (!match) return null;
   const mixes = Math.floor(match.quantity / amountMl);
   return (
-    <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 p-3 mt-3">
+    <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900/30 p-3 mt-3">
       <Package className="size-4 text-blue-600 mt-0.5 shrink-0" />
       <p className="text-xs text-blue-800 dark:text-blue-200">
         You have <span className="font-semibold">{match.quantity} {match.unit}</span> of{" "}
@@ -425,45 +425,45 @@ export default function NutrientsPage() {
                     </div>
 
                     <div className="grid gap-3">
-                      <div className="flex items-center justify-between rounded-xl border bg-card/60 px-4 py-2.5">
+                      <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-2.5">
                         <span className="text-sm font-medium">{results.partALabel}</span>
-                        <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20">
+                        <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950">
                           {results.partA} mL
                         </Badge>
                       </div>
                       {results.partB > 0 && (
-                        <div className="flex items-center justify-between rounded-xl border bg-card/60 px-4 py-2.5">
+                        <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-2.5">
                           <span className="text-sm font-medium">{results.partBLabel}</span>
-                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20">
+                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950">
                             {results.partB} mL
                           </Badge>
                         </div>
                       )}
                       {results.partC !== undefined && results.partC > 0 && results.partCLabel && (
-                        <div className="flex items-center justify-between rounded-xl border bg-card/60 px-4 py-2.5">
+                        <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-2.5">
                           <span className="text-sm font-medium">{results.partCLabel}</span>
-                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20">
+                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950">
                             {results.partC} mL
                           </Badge>
                         </div>
                       )}
                       {results.phAdjuster && (
-                        <div className="flex items-center justify-between rounded-xl border bg-card/60 px-4 py-2.5">
+                        <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-2.5">
                           <span className="text-sm font-medium">
                             pH {results.phAdjuster.direction === "down" ? "Down" : "Up"}
                           </span>
-                          <Badge variant="outline" className="text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/20">
+                          <Badge variant="outline" className="text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950">
                             ~{results.phAdjuster.ml} mL
                           </Badge>
                         </div>
                       )}
-                      <div className="flex items-center justify-between rounded-xl border bg-card/60 px-4 py-2.5">
+                      <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-2.5">
                         <span className="text-sm font-medium">Estimated PPM</span>
                         <div className="flex gap-2">
-                          <Badge variant="outline" className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20">
+                          <Badge variant="outline" className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950">
                             {results.estimatedPPM500} (500)
                           </Badge>
-                          <Badge variant="outline" className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20">
+                          <Badge variant="outline" className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950">
                             {results.estimatedPPM700} (700)
                           </Badge>
                         </div>
@@ -471,7 +471,7 @@ export default function NutrientsPage() {
                     </div>
 
                     {results.phAdjuster && (
-                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 p-3">
+                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900/30 p-3">
                         <AlertTriangle className="size-4 text-amber-600 mt-0.5 shrink-0" />
                         <p className="text-xs text-amber-800 dark:text-amber-200">
                           pH adjusters are concentrated. Add small amounts, mix thoroughly, and retest before adding more.
@@ -511,7 +511,7 @@ export default function NutrientsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card/40 p-8 text-center">
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card p-8 text-center">
                   <Beaker className="size-8 text-muted-foreground/40 mb-2" />
                   <p className="text-sm text-muted-foreground">Enter your parameters and click Calculate to see results.</p>
                 </div>
@@ -550,7 +550,7 @@ export default function NutrientsPage() {
                 </Select>
               </div>
               {typeof ecToPpm === "number" && ecToPpm > 0 && (
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 px-3 py-2">
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900/30 px-3 py-2">
                   <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                     {Math.round(ecToPpm * Number(ppmScale))} PPM
                   </p>
@@ -602,7 +602,7 @@ export default function NutrientsPage() {
                 />
               </div>
               {topOffResult && topOffResult.action !== "no_change" && (
-                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 px-3 py-2">
+                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900/30 px-3 py-2">
                   {topOffResult.action === "add_water" ? (
                     <>
                       <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
@@ -684,7 +684,7 @@ export default function NutrientsPage() {
         </div>
 
         {/* Stage Tabs */}
-        <div className="inline-flex rounded-xl bg-muted/60 p-1 flex-wrap">
+        <div className="inline-flex rounded-xl bg-muted p-1 flex-wrap">
           {stages.map((s) => (
             <button
               key={s}
@@ -720,13 +720,13 @@ export default function NutrientsPage() {
                   const target = targets[stage];
                   if (!target) return null;
                   return (
-                    <div key={name} className="flex items-center justify-between rounded-xl border px-4 py-2.5 transition-colors hover:bg-accent/30">
+                    <div key={name} className="flex items-center justify-between rounded-xl border px-4 py-2.5 transition-colors hover:bg-accent">
                       <span className="text-sm font-medium">{name}</span>
                       <div className="flex gap-3 text-xs font-semibold">
-                        <span className="text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full">
+                        <span className="text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-full">
                           EC {target.ec[0]}-{target.ec[1]}
                         </span>
-                        <span className="text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full">
+                        <span className="text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
                           pH {target.ph[0]}-{target.ph[1]}
                         </span>
                       </div>
@@ -751,7 +751,7 @@ export default function NutrientsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {nutrientBrands.map((brand) => (
-                <div key={brand.name} className="rounded-xl border p-4 transition-colors hover:bg-accent/20">
+                <div key={brand.name} className="rounded-xl border p-4 transition-colors hover:bg-accent">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-semibold text-sm">{brand.name}</p>
                     <Badge variant="outline" className="text-[10px] h-5">{brand.country}</Badge>
@@ -764,7 +764,7 @@ export default function NutrientsPage() {
                           <span className="text-muted-foreground text-xs">
                             {product.name} {product.npk && <span className="text-[10px] opacity-60">({product.npk})</span>}
                           </span>
-                          <span className="font-semibold text-xs bg-muted/60 px-2 py-0.5 rounded-full">{product.mlPerLiter} ml/L</span>
+                          <span className="font-semibold text-xs bg-muted px-2 py-0.5 rounded-full">{product.mlPerLiter} ml/L</span>
                         </div>
                       ))}
                   </div>
@@ -787,15 +787,15 @@ export default function NutrientsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-xl border bg-card/50 p-4">
+            <div className="rounded-xl border bg-card p-4">
               <p className="font-semibold text-foreground mb-1">EC (Electrical Conductivity)</p>
               <p>Measures total dissolved salts in your nutrient solution. Use an EC meter to ensure your plants are getting the right concentration.</p>
             </div>
-            <div className="rounded-xl border bg-card/50 p-4">
+            <div className="rounded-xl border bg-card p-4">
               <p className="font-semibold text-foreground mb-1">pH</p>
               <p>Affects nutrient availability. Most hydroponic plants prefer pH 5.5–6.5. Check daily and adjust with pH up/down solutions.</p>
             </div>
-            <div className="rounded-xl border bg-card/50 p-4">
+            <div className="rounded-xl border bg-card p-4">
               <p className="font-semibold text-foreground mb-1">NPK</p>
               <p>Nitrogen (N) for leaf growth, Phosphorus (P) for roots/flowers, Potassium (K) for fruit and overall health.</p>
             </div>

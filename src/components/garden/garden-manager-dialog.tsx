@@ -110,8 +110,8 @@ export function GardenManagerDialog({ open, onOpenChange }: GardenManagerDialogP
                 className={cn(
                   "flex items-center justify-between rounded-xl border px-4 py-3 transition-all",
                   garden.id === activeGardenId
-                    ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20"
-                    : "border-border hover:bg-accent/40"
+                    ? "border-emerald-300 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-950"
+                    : "border-border hover:bg-accent"
                 )}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -181,7 +181,7 @@ export function GardenManagerDialog({ open, onOpenChange }: GardenManagerDialogP
             ))}
 
             {confirmDelete && (
-              <div className="rounded-xl border border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10 p-4 space-y-3">
+              <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-950 p-4 space-y-3">
                 <p className="text-sm font-medium text-destructive">
                   Delete this garden?
                 </p>

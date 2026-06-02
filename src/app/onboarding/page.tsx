@@ -402,10 +402,7 @@ export default function OnboardingPage() {
           plantedDate: new Date(cfg.plantedDate || todayStr()),
           healthTags: [],
           tags: [],
-          notes:
-            cfg.quantity > 1
-              ? `Quantity: ${cfg.quantity} plants`
-              : undefined,
+          quantity: cfg.quantity,
         });
       }
 
@@ -560,8 +557,8 @@ export default function OnboardingPage() {
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all",
                     selected
-                      ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                      : "border-border hover:border-muted-foreground hover:bg-accent"
                   )}
                 >
                   <div
@@ -634,8 +631,8 @@ export default function OnboardingPage() {
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all",
                     selected
-                      ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                      : "border-border hover:border-muted-foreground hover:bg-accent"
                   )}
                 >
                   <div
@@ -705,8 +702,8 @@ export default function OnboardingPage() {
                     className={cn(
                       "flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition-all",
                       isSelected
-                        ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                        : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                        : "border-border hover:border-muted-foreground hover:bg-accent"
                     )}
                   >
                     <div
@@ -737,10 +734,10 @@ export default function OnboardingPage() {
               const diff = getDifficulty(plant);
               const diffColor =
                 diff === "Beginner"
-                  ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                  ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950"
                   : diff === "Intermediate"
-                  ? "text-amber-600 bg-amber-50 dark:bg-amber-950/20"
-                  : "text-rose-600 bg-rose-50 dark:bg-rose-950/20";
+                  ? "text-amber-600 bg-amber-50 dark:bg-amber-950"
+                  : "text-rose-600 bg-rose-50 dark:bg-rose-950";
 
               return (
                 <div key={plant.name} className="space-y-2">
@@ -750,10 +747,10 @@ export default function OnboardingPage() {
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all",
                       isSelected
-                        ? "border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/15"
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
                         : selectedPlants.length >= 3
                         ? "border-border opacity-50 cursor-not-allowed"
-                        : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                        : "border-border hover:border-muted-foreground hover:bg-accent"
                     )}
                   >
                     <div
@@ -793,7 +790,7 @@ export default function OnboardingPage() {
                       animate={{ height: "auto", opacity: 1 }}
                       className="overflow-hidden"
                     >
-                      <Card className="border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10">
+                      <Card className="border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950">
                         <CardContent className="p-3 space-y-3">
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
@@ -901,8 +898,8 @@ export default function OnboardingPage() {
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition-all",
                     selected
-                      ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                      : "border-border hover:border-muted-foreground hover:bg-accent"
                   )}
                 >
                   <div
@@ -982,8 +979,8 @@ export default function OnboardingPage() {
                 className={cn(
                   "flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all",
                   units === u
-                    ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                    : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                    : "border-border hover:border-muted-foreground hover:bg-accent"
                 )}
               >
                 <Ruler className="size-4 text-muted-foreground" />
@@ -1004,8 +1001,8 @@ export default function OnboardingPage() {
                 className={cn(
                   "flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all",
                   tempUnit === t
-                    ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                    : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                    : "border-border hover:border-muted-foreground hover:bg-accent"
                 )}
               >
                 <Thermometer className="size-4 text-muted-foreground" />
@@ -1030,8 +1027,8 @@ export default function OnboardingPage() {
                 className={cn(
                   "flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-center transition-all",
                   themeMode === value
-                    ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20"
-                    : "border-border hover:border-muted-foreground/30 hover:bg-accent/40"
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                    : "border-border hover:border-muted-foreground hover:bg-accent"
                 )}
               >
                 <Icon className="size-5 text-muted-foreground" />
@@ -1096,21 +1093,21 @@ export default function OnboardingPage() {
         </div>
 
         <div className="w-full max-w-xs space-y-2 text-left">
-          <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-2.5">
             <MapPin className="size-4 text-emerald-500" />
             <span className="text-sm">{city || location.name}</span>
           </div>
-          <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-2.5">
             <Sprout className="size-4 text-emerald-500" />
             <span className="text-sm">{gardenName}</span>
           </div>
-          <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-2.5">
             <Leaf className="size-4 text-emerald-500" />
             <span className="text-sm">
               {selectedPlants.length} plant{selectedPlants.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-2.5">
+          <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-2.5">
             <LayoutGrid className="size-4 text-emerald-500" />
             <span className="text-sm">{spaceName}</span>
           </div>

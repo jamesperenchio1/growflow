@@ -95,7 +95,7 @@ function PairCard({ pair }: { pair: CompanionPair }) {
     <Card
       className={cn(
         "border-0 shadow-sm transition-all",
-        isBeneficial ? "bg-emerald-50/50 dark:bg-emerald-950/10" : "bg-rose-50/50 dark:bg-rose-950/10"
+        isBeneficial ? "bg-emerald-50 dark:bg-emerald-950" : "bg-rose-50 dark:bg-rose-950"
       )}
     >
       <CardContent className="p-4">
@@ -149,7 +149,7 @@ function PairCard({ pair }: { pair: CompanionPair }) {
         </Button>
 
         {expanded && (
-          <div className="mt-2 rounded-lg border bg-card/60 p-3 text-xs text-muted-foreground space-y-1">
+          <div className="mt-2 rounded-lg border bg-card p-3 text-xs text-muted-foreground space-y-1">
             <p>
               <span className="font-medium text-foreground">Category:</span>{" "}
               {styleA.label} + {styleB.label}
@@ -192,7 +192,7 @@ function ThreeSistersCard() {
             { title: "Corn", desc: "Provides a natural trellis for bean vines to climb." },
             { title: "Squash", desc: "Shades the soil, suppressing weeds and retaining moisture." },
           ].map((item) => (
-            <li key={item.title} className="flex items-start gap-2 rounded-lg border bg-card/50 p-2.5">
+            <li key={item.title} className="flex items-start gap-2 rounded-lg border bg-card p-2.5">
               <span className="font-semibold text-foreground text-xs shrink-0 w-14">{item.title}</span>
               <span className="text-xs leading-relaxed">{item.desc}</span>
             </li>
@@ -373,7 +373,7 @@ export default function CompanionsPage() {
                               p.plantA.toLowerCase() === companion.toLowerCase())
                         );
                         return (
-                          <Card key={companion} className="border-0 shadow-sm bg-emerald-50/50 dark:bg-emerald-950/10">
+                          <Card key={companion} className="border-0 shadow-sm bg-emerald-50 dark:bg-emerald-950">
                             <CardContent className="p-4">
                               <div className="flex items-center gap-2.5">
                                 <div className={cn("icon-circle size-8", style.bg, "dark:opacity-90")}>
@@ -414,7 +414,7 @@ export default function CompanionsPage() {
                               p.plantA.toLowerCase() === avoid.toLowerCase())
                         );
                         return (
-                          <Card key={avoid} className="border-0 shadow-sm bg-rose-50/50 dark:bg-rose-950/10">
+                          <Card key={avoid} className="border-0 shadow-sm bg-rose-50 dark:bg-rose-950">
                             <CardContent className="p-4">
                               <div className="flex items-center gap-2.5">
                                 <div className={cn("icon-circle size-8", style.bg, "dark:opacity-90")}>
@@ -441,7 +441,7 @@ export default function CompanionsPage() {
         </Tabs>
 
         {/* Info footer */}
-        <div className="flex items-start gap-2 rounded-lg border bg-card/50 p-3 text-xs text-muted-foreground">
+        <div className="flex items-start gap-2 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
           <Info className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
           <p>
             Companion planting recommendations are based on research from university extension services

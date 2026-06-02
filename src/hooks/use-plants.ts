@@ -6,7 +6,7 @@ import { useGardenStore, addEntityToGarden, removeEntityFromGarden, getGardenEnt
 interface UsePlantsResult {
   plants: Plant[];
   loading: boolean;
-  addPlant: (plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>) => Promise<number>;
+  addPlant: (plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>) => Promise<number[]>;
   updatePlant: (id: number, changes: Partial<Plant>) => Promise<void>;
   deletePlant: (id: number) => Promise<void>;
   refresh: () => Promise<void>;
@@ -38,22 +38,32 @@ export function usePlants(): UsePlantsResult {
 
   const addPlant = useCallback(async (plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date();
-    const id = await db.plants.add({
-      ...plant,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const qty = Math.max(1, Math.min(20, plant.quantity ?? 1));
+    const ids: number[] = [];
     const gardenId = useGardenStore.getState().activeGardenId ?? 'default';
-    addEntityToGarden(gardenId, 'plantIds', id as number);
-    await db.logEntries.add({
-      plantId: id,
-      type: 'milestone',
-      title: 'Plant added to garden',
-      description: `${plant.name} was added to the garden.`,
-      createdAt: now,
-    });
+
+    for (let i = 0; i < qty; i++) {
+      const plantName = qty > 1 ? `${plant.name.trim()} #${i + 1}` : plant.name.trim();
+      const id = await db.plants.add({
+        ...plant,
+        name: plantName,
+        quantity: 1,
+        createdAt: now,
+        updatedAt: now,
+      });
+      ids.push(id as number);
+      addEntityToGarden(gardenId, 'plantIds', id as number);
+      await db.logEntries.add({
+        plantId: id as number,
+        type: 'milestone',
+        title: 'Plant added to garden',
+        description: `${plantName} was added to the garden.`,
+        createdAt: now,
+      });
+    }
+
     await refresh();
-    return id as number;
+    return ids;
   }, [refresh]);
 
   const updatePlant = useCallback(async (id: number, changes: Partial<Plant>) => {

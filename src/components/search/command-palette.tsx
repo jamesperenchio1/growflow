@@ -261,7 +261,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     onClick={() => setQuery(term)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                      selectedIndex === i ? "bg-accent" : "hover:bg-accent/50"
+                      selectedIndex === i ? "bg-accent" : "hover:bg-accent"
                     )}
                     onMouseEnter={() => setSelectedIndex(i)}
                   >
@@ -308,7 +308,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                             onClick={() => handleSelect(item)}
                             className={cn(
                               "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                              isSelected ? "bg-accent" : "hover:bg-accent/50"
+                              isSelected ? "bg-accent" : "hover:bg-accent"
                             )}
                             onMouseEnter={() => setSelectedIndex(idx)}
                           >
@@ -347,7 +347,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between border-t bg-muted px-4 py-2 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <CornerDownLeft className="size-3" /> to select

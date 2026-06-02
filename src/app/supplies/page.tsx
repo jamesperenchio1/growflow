@@ -137,8 +137,8 @@ function StatCard({
   alert?: boolean;
 }) {
   return (
-    <Card className={cn("border-0 shadow-sm", gradient)}>
-      <CardContent className="p-5">
+    <Card className={cn("border-0 shadow-sm min-h-[120px]", gradient)}>
+      <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
@@ -286,7 +286,7 @@ export default function SuppliesPage() {
 
   return (
     <PageShell>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Header */}
         <div className="flex items-end justify-between">
           <div>
@@ -311,7 +311,7 @@ export default function SuppliesPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Items"
             value={String(items.length)}
@@ -357,14 +357,14 @@ export default function SuppliesPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
             {categories.map((c) => (
               <button
                 key={c.value}
                 onClick={() => setActiveCategory(c.value)}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                  "rounded-full px-4 py-2 text-sm font-medium transition-all",
                   activeCategory === c.value
                     ? "bg-emerald-600 text-white"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -374,8 +374,8 @@ export default function SuppliesPage() {
               </button>
             ))}
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search supplies..."
               className="pl-9"
@@ -414,7 +414,7 @@ export default function SuppliesPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {filteredItems.map((item) => {
               const config = categoryConfig[item.category];
               const Icon = config.icon;
@@ -433,17 +433,17 @@ export default function SuppliesPage() {
                     isCritical && "ring-1 ring-rose-200 dark:ring-rose-900/30"
                   )}
                 >
-                  <CardContent className="p-5 space-y-4">
+                  <CardContent className="p-6 space-y-5">
                     {/* Top row */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div
                           className={cn(
-                            "flex size-9 items-center justify-center rounded-lg",
+                            "flex size-10 shrink-0 items-center justify-center rounded-lg",
                             config.badge
                           )}
                         >
-                          <Icon className={cn("size-4", config.color)} />
+                          <Icon className={cn("size-5", config.color)} />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold truncate leading-tight">
@@ -451,7 +451,7 @@ export default function SuppliesPage() {
                           </p>
                           <span
                             className={cn(
-                              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium mt-1",
+                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium mt-1.5",
                               config.badge
                             )}
                           >
@@ -463,30 +463,30 @@ export default function SuppliesPage() {
                       <div className="flex gap-1 shrink-0">
                         <button
                           onClick={() => openEdit(item)}
-                          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                          className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="size-3.5" />
+                          <Pencil className="size-4" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(item.id)}
-                          className="rounded-md p-1.5 text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                          className="rounded-md p-2 text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition-colors"
                           title="Delete"
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4" />
                         </button>
                       </div>
                     </div>
 
                     {/* Quantity */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">
                           {item.quantity} {item.unit}
                         </span>
                         <span
                           className={cn(
-                            "text-xs font-medium",
+                            "text-xs font-semibold",
                             isCritical
                               ? "text-rose-600"
                               : isLow
@@ -501,20 +501,20 @@ export default function SuppliesPage() {
                             : "In stock"}
                         </span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className={cn("h-full rounded-full transition-all", progressColor)}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                       <p className="text-[11px] text-muted-foreground">
-                        Min: {item.minThreshold} {item.unit}
+                        Minimum threshold: {item.minThreshold} {item.unit}
                       </p>
                     </div>
 
                     {/* Meta */}
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      {item.supplier && <p>Supplier: {item.supplier}</p>}
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      {item.supplier && <p className="break-words">Supplier: {item.supplier}</p>}
                       {item.cost !== undefined && (
                         <p>
                           Cost: {item.currency} {item.cost.toFixed(2)} / {item.unit}
@@ -532,7 +532,7 @@ export default function SuppliesPage() {
                         </p>
                       )}
                       {item.notes && (
-                        <p className="line-clamp-2">{item.notes}</p>
+                        <p className="line-clamp-2 break-words">{item.notes}</p>
                       )}
                     </div>
 

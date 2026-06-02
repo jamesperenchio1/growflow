@@ -1,5 +1,6 @@
 export type PestDiseaseCategory = 'pest' | 'disease';
 export type Severity = 'low' | 'medium' | 'high';
+export type GrowthStage = 'germination' | 'seedling' | 'vegetative' | 'flowering' | 'fruiting' | 'harvesting';
 
 export interface PestDisease {
   id: string;
@@ -11,6 +12,9 @@ export interface PestDisease {
   prevention: string[];
   affectedPlants: string[];
   imageKeyword: string;
+  lifeCycle: string[];
+  treatmentTimeline: { day: string; action: string }[];
+  affectedGrowthStages: GrowthStage[];
 }
 
 export const pestsAndDiseases: PestDisease[] = [
@@ -40,6 +44,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Tomato', 'Lettuce', 'Basil', 'Bell Pepper', 'Cucumber', 'Spinach', 'Kale', 'Broccoli', 'Marigold', 'Strawberry'],
     imageKeyword: 'aphids on leaf',
+    lifeCycle: [
+      'Egg: Overwintering eggs hatch in spring (2–3 days)',
+      'Nymph: 4 instars, reproduces asexually, matures in 7–10 days',
+      'Adult: Live 20–40 days, produce 50–100 offspring each',
+      'Winged form: Develops when colony is crowded to spread to new plants',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Isolate infected plants and inspect all neighbors' },
+      { day: 'Day 1', action: 'Spray insecticidal soap or neem oil thoroughly' },
+      { day: 'Day 3', action: 'Reapply treatment and check for survivors' },
+      { day: 'Day 7', action: 'Third application if needed; release beneficial insects' },
+      { day: 'Day 14', action: 'Monitor weekly; maintain preventive sprays' },
+    ],
+    affectedGrowthStages: ['seedling', 'vegetative', 'flowering'],
   },
   {
     id: 'spider-mites',
@@ -67,6 +85,21 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Tomato', 'Bell Pepper', 'Cucumber', 'Spinach', 'Strawberry', 'Marigold', 'Basil', 'Bird Chili'],
     imageKeyword: 'spider mite damage',
+    lifeCycle: [
+      'Egg: Laid on leaf undersides, hatch in 3–5 days at warm temperatures',
+      'Larva: 6-legged, feeds immediately, lasts 2–4 days',
+      'Nymph: 8-legged, 2 instars over 3–5 days',
+      'Adult: Live 2–4 weeks, females lay 100+ eggs in lifetime',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Increase humidity and isolate affected plants' },
+      { day: 'Day 1', action: 'Spray insecticidal soap or horticultural oil on all leaf undersides' },
+      { day: 'Day 2', action: 'Release predatory mites if available' },
+      { day: 'Day 4', action: 'Reapply spray; prune heavily damaged leaves' },
+      { day: 'Day 7', action: 'Third spray application' },
+      { day: 'Day 14', action: 'Continue weekly monitoring and misting' },
+    ],
+    affectedGrowthStages: ['vegetative', 'flowering', 'fruiting'],
   },
   {
     id: 'whiteflies',
@@ -93,6 +126,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Tomato', 'Lettuce', 'Basil', 'Bell Pepper', 'Cucumber', 'Broccoli', 'Thai Basil', 'Bird Chili', 'Marigold', 'Thai Eggplant'],
     imageKeyword: 'whitefly infestation',
+    lifeCycle: [
+      'Egg: Laid in circles on leaf undersides, hatch in 5–10 days',
+      'Crawler: Mobile first instar, settles to feed within hours',
+      'Pupa: 3 sessile instars over 2–3 weeks',
+      'Adult: Emerges from pupal case, lives 1–2 months',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Hang yellow sticky traps and vacuum adults' },
+      { day: 'Day 1', action: 'Spray insecticidal soap on leaf undersides' },
+      { day: 'Day 4', action: 'Reapply spray and check trap counts' },
+      { day: 'Day 7', action: 'Third application; release Encarsia wasps if severe' },
+      { day: 'Day 14', action: 'Continue weekly sprays until populations decline' },
+    ],
+    affectedGrowthStages: ['seedling', 'vegetative', 'flowering'],
   },
   {
     id: 'thrips',
@@ -119,6 +166,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Onion', 'Bird Chili', 'Marigold', 'Basil', 'Bell Pepper', 'Tomato'],
     imageKeyword: 'thrips damage leaf',
+    lifeCycle: [
+      'Egg: Laid in plant tissue, hatch in 2–7 days',
+      'Larva: 2 instars, feeds actively for 3–5 days',
+      'Pupa: Drops to soil or leaf litter for 2–5 days',
+      'Adult: Emerges, lives 20–45 days, lays 50–300 eggs',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Hang blue sticky traps and inspect flowers' },
+      { day: 'Day 1', action: 'Apply spinosad spray to leaves and flowers' },
+      { day: 'Day 3', action: 'Apply beneficial nematodes to growing media' },
+      { day: 'Day 7', action: 'Reapply spinosad if trap counts remain high' },
+      { day: 'Day 14', action: 'Continue monitoring traps weekly' },
+    ],
+    affectedGrowthStages: ['vegetative', 'flowering', 'fruiting'],
   },
   {
     id: 'fungus-gnats',
@@ -145,6 +206,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Lettuce', 'Basil', 'Spinach', 'Kale', 'Broccoli', 'Tomato', 'Strawberry'],
     imageKeyword: 'fungus gnat hydroponic',
+    lifeCycle: [
+      'Egg: Laid in moist media, hatch in 4–6 days',
+      'Larva: Feeds on fungi and roots for 12–14 days',
+      'Pupa: In media for 4–6 days',
+      'Adult: Emerges, lives 7–10 days, lays 100–200 eggs',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Hang yellow sticky traps and reduce watering' },
+      { day: 'Day 1', action: 'Apply BTi drench to growing media' },
+      { day: 'Day 3', action: 'Add sand or diatomaceous earth layer on media surface' },
+      { day: 'Day 7', action: 'Reapply BTi drench' },
+      { day: 'Day 14', action: 'Continue dry-top strategy and monitor traps' },
+    ],
+    affectedGrowthStages: ['germination', 'seedling', 'vegetative'],
   },
 
   // ─── DISEASES ───
@@ -173,6 +248,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Lettuce', 'Cucumber', 'Spinach', 'Kale', 'Basil', 'Tomato', 'Marigold', 'Strawberry', 'Carrot', 'Bitter Melon'],
     imageKeyword: 'powdery mildew leaf',
+    lifeCycle: [
+      'Spore: Wind-dispersed conidia germinate on leaf surface in 2–4 hours',
+      'Infection: Mycelium spreads across surface, extracts nutrients (3–7 days)',
+      'Sporulation: New conidia form on white patches, spreading rapidly',
+      'Overwintering: Chasmothecia form on dead tissue for next season',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove and destroy severely infected leaves' },
+      { day: 'Day 1', action: 'Apply baking soda or milk spray to all foliage' },
+      { day: 'Day 3', action: 'Increase airflow with fans or spacing adjustments' },
+      { day: 'Day 5', action: 'Reapply spray; inspect for new patches' },
+      { day: 'Day 10', action: 'Continue every 5–7 days until clear' },
+    ],
+    affectedGrowthStages: ['vegetative', 'flowering', 'fruiting'],
   },
   {
     id: 'botrytis',
@@ -199,6 +288,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Strawberry', 'Tomato', 'Basil', 'Lettuce', 'Bell Pepper', 'Marigold', 'Broccoli', 'Thai Basil'],
     imageKeyword: 'botrytis gray mold',
+    lifeCycle: [
+      'Spore: Conidia spread by air and water splash',
+      'Germination: Occurs on senescent tissue or wounds in 4–8 hours',
+      'Infection: Gray mycelium colonizes tissue in 24–48 hours at high humidity',
+      'Sporulation: Millions of new spores produced on gray fuzz',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove all infected tissue immediately — do not compost' },
+      { day: 'Day 1', action: 'Reduce humidity and increase airflow' },
+      { day: 'Day 2', action: 'Apply copper fungicide if infection is severe' },
+      { day: 'Day 5', action: 'Reinspect and remove any new infected material' },
+      { day: 'Day 7', action: 'Reapply fungicide if conditions remain humid' },
+    ],
+    affectedGrowthStages: ['flowering', 'fruiting', 'harvesting'],
   },
   {
     id: 'pythium',
@@ -226,6 +329,21 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Lettuce', 'Basil', 'Spinach', 'Tomato', 'Cucumber', 'Strawberry', 'Kale', 'Broccoli', 'Morning Glory'],
     imageKeyword: 'pythium root rot hydroponic',
+    lifeCycle: [
+      'Oospore: Survives in water and debris for months to years',
+      'Zoospore: Motile spores swim to roots in water (flagellated)',
+      'Infection: Enters root tips and cortex, causing rot in 24–72 hours',
+      'Sporulation: New zoospores released into water to infect other plants',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove severely affected plants immediately' },
+      { day: 'Day 1', action: 'Drain reservoir and sterilize with H₂O₂' },
+      { day: 'Day 1', action: 'Refill with fresh nutrient solution + beneficial microbes' },
+      { day: 'Day 3', action: 'Check remaining plants for root health' },
+      { day: 'Day 7', action: 'Add second dose of beneficial microbes' },
+      { day: 'Day 14', action: 'Monitor water temp and root color weekly' },
+    ],
+    affectedGrowthStages: ['seedling', 'vegetative', 'flowering'],
   },
   {
     id: 'bacterial-spot',
@@ -252,6 +370,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Tomato', 'Bell Pepper', 'Bird Chili', 'Thai Eggplant'],
     imageKeyword: 'bacterial spot tomato',
+    lifeCycle: [
+      'Bacteria: Overwinters in seed and plant debris',
+      'Entry: Enters through stomata or wounds during wet conditions',
+      'Multiplication: Spreads intercellularly, causing lesions in 3–7 days',
+      'Spread: Rain splash and human contact move bacteria to new plants',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove infected leaves and fruit; sterilize tools' },
+      { day: 'Day 1', action: 'Apply copper bactericide spray' },
+      { day: 'Day 3', action: 'Avoid watering foliage; water at base only' },
+      { day: 'Day 7', action: 'Reapply copper spray' },
+      { day: 'Day 14', action: 'Continue weekly applications if wet weather persists' },
+    ],
+    affectedGrowthStages: ['vegetative', 'flowering', 'fruiting'],
   },
   {
     id: 'downy-mildew',
@@ -278,6 +410,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Lettuce', 'Basil', 'Cucumber', 'Spinach', 'Kale', 'Onion', 'Broccoli', 'Morning Glory', 'Bitter Melon'],
     imageKeyword: 'downy mildew leaf',
+    lifeCycle: [
+      'Oospore: Overwinters in soil and plant debris',
+      'Sporangia: Produced on leaf undersides during humid nights',
+      'Zoospore: Released from sporangia, swim to new leaves in moisture',
+      'Infection: Enters leaf stomata, symptoms appear in 3–5 days',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove infected leaves and improve airflow' },
+      { day: 'Day 1', action: 'Apply copper fungicide to all foliage' },
+      { day: 'Day 3', action: 'Ensure foliage dries completely between waterings' },
+      { day: 'Day 7', action: 'Reapply copper spray' },
+      { day: 'Day 14', action: 'Continue weekly monitoring and preventive sprays' },
+    ],
+    affectedGrowthStages: ['seedling', 'vegetative', 'flowering'],
   },
   {
     id: 'fusarium-wilt',
@@ -303,6 +449,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Basil', 'Tomato', 'Spinach', 'Kale', 'Lettuce', 'Bell Pepper', 'Bird Chili', 'Bitter Melon'],
     imageKeyword: 'fusarium wilt tomato',
+    lifeCycle: [
+      'Chlamydospore: Survives in soil and debris for 10+ years',
+      'Germination: Triggered by root exudates near plant roots',
+      'Infection: Enters roots, colonizes xylem vessels, blocks water transport',
+      'Spread: Spores move through water and contaminated tools/equipment',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove and destroy entire infected plant' },
+      { day: 'Day 1', action: 'Sterilize all tools, trellises, and surfaces with bleach' },
+      { day: 'Day 1', action: 'Drain and sterilize reservoir if hydroponic' },
+      { day: 'Day 7', action: 'Inspect neighboring plants for early symptoms' },
+      { day: 'Ongoing', action: 'Only use resistant varieties in affected area' },
+    ],
+    affectedGrowthStages: ['seedling', 'vegetative', 'flowering'],
   },
   {
     id: 'tmv',
@@ -328,6 +488,20 @@ export const pestsAndDiseases: PestDisease[] = [
     ],
     affectedPlants: ['Tomato', 'Bell Pepper', 'Bird Chili', 'Long Bean', 'Thai Eggplant'],
     imageKeyword: 'tobacco mosaic virus',
+    lifeCycle: [
+      'Virus particle: Extremely stable, survives years on surfaces and in seed coats',
+      'Entry: Enters through wounds or abrasion during handling',
+      'Replication: Multiplies in plant cells, spreads systemically via plasmodesmata',
+      'Transmission: Spread by human contact, tools, and occasionally seed',
+    ],
+    treatmentTimeline: [
+      { day: 'Day 1', action: 'Remove and destroy infected plant immediately' },
+      { day: 'Day 1', action: 'Wash hands thoroughly; sterilize all tools and surfaces' },
+      { day: 'Day 1', action: 'Do not touch other plants until hands are washed' },
+      { day: 'Day 3', action: 'Inspect all neighboring plants for mosaic patterns' },
+      { day: 'Ongoing', action: 'Only plant TMV-resistant varieties in future' },
+    ],
+    affectedGrowthStages: ['seedling', 'vegetative', 'flowering'],
   },
 ];
 

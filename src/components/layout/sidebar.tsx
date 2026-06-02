@@ -51,7 +51,7 @@ export function Sidebar() {
         sidebarOpen ? "w-60" : "w-16"
       )}
     >
-      <div className="flex h-16 items-center border-b px-3">
+      <div className="flex h-16 items-center border-b px-3 bg-sidebar">
         <Link
           href="/"
           className={cn(
@@ -76,7 +76,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3 bg-sidebar">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -88,7 +88,7 @@ export function Sidebar() {
                 "group flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all relative",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                 !sidebarOpen && "justify-center px-0"
               )}
               title={!sidebarOpen ? item.label : undefined}

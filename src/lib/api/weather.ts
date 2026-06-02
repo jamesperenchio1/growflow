@@ -11,6 +11,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
     daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset',
     timezone: 'auto',
     forecast_days: '7',
+    past_days: '7',
   });
 
   const res = await fetch(`${BASE_URL}?${params.toString()}`);
@@ -20,8 +21,42 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
 
   const json = await res.json();
 
-  // Hourly: next 12 hours
-  const hourlySlice = 12;
+  // Hourly: next 24 hours from current time
+  const nowHour = new Date().getHours();
+  const currentHourIndex = json.hourly.time.findIndex((t: string) => {
+    const d = new Date(t);
+    return d.getHours() === nowHour;
+  });
+  const startIdx = currentHourIndex >= 0 ? currentHourIndex : 0;
+  const hourlySlice = 24;
+
+  // Daily past: last 7 days (indices 0–6)
+  const pastDaily = {
+    time: json.daily.time.slice(0, 7),
+    temperatureMax: json.daily.temperature_2m_max.slice(0, 7),
+    temperatureMin: json.daily.temperature_2m_min.slice(0, 7),
+    weatherCode: json.daily.weather_code.slice(0, 7),
+    precipitationSum: json.daily.precipitation_sum.slice(0, 7),
+    precipitationProbabilityMax: json.daily.precipitation_probability_max.slice(0, 7),
+    windSpeedMax: json.daily.wind_speed_10m_max.slice(0, 7),
+    uvIndexMax: json.daily.uv_index_max.slice(0, 7),
+    sunrise: json.daily.sunrise.slice(0, 7),
+    sunset: json.daily.sunset.slice(0, 7),
+  };
+
+  // Daily forecast: next 7 days (indices 7–13)
+  const forecastDaily = {
+    time: json.daily.time.slice(7, 14),
+    weatherCode: json.daily.weather_code.slice(7, 14),
+    temperatureMax: json.daily.temperature_2m_max.slice(7, 14),
+    temperatureMin: json.daily.temperature_2m_min.slice(7, 14),
+    precipitationSum: json.daily.precipitation_sum.slice(7, 14),
+    precipitationProbabilityMax: json.daily.precipitation_probability_max.slice(7, 14),
+    windSpeedMax: json.daily.wind_speed_10m_max.slice(7, 14),
+    uvIndexMax: json.daily.uv_index_max.slice(7, 14),
+    sunrise: json.daily.sunrise.slice(7, 14),
+    sunset: json.daily.sunset.slice(7, 14),
+  };
 
   return {
     current: {
@@ -38,24 +73,14 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
       cloudCover: json.current.cloud_cover,
     },
     hourly: {
-      time: json.hourly.time.slice(0, hourlySlice),
-      temperature: json.hourly.temperature_2m.slice(0, hourlySlice),
-      weatherCode: json.hourly.weather_code.slice(0, hourlySlice),
-      precipitation: json.hourly.precipitation_probability.slice(0, hourlySlice),
-      humidity: json.hourly.relative_humidity_2m.slice(0, hourlySlice),
+      time: json.hourly.time.slice(startIdx, startIdx + hourlySlice),
+      temperature: json.hourly.temperature_2m.slice(startIdx, startIdx + hourlySlice),
+      weatherCode: json.hourly.weather_code.slice(startIdx, startIdx + hourlySlice),
+      precipitation: json.hourly.precipitation_probability.slice(startIdx, startIdx + hourlySlice),
+      humidity: json.hourly.relative_humidity_2m.slice(startIdx, startIdx + hourlySlice),
     },
-    daily: {
-      time: json.daily.time,
-      weatherCode: json.daily.weather_code,
-      temperatureMax: json.daily.temperature_2m_max,
-      temperatureMin: json.daily.temperature_2m_min,
-      precipitationSum: json.daily.precipitation_sum,
-      precipitationProbabilityMax: json.daily.precipitation_probability_max,
-      windSpeedMax: json.daily.wind_speed_10m_max,
-      uvIndexMax: json.daily.uv_index_max,
-      sunrise: json.daily.sunrise,
-      sunset: json.daily.sunset,
-    },
+    daily: forecastDaily,
+    history: pastDaily,
   };
 }
 
@@ -96,4 +121,31 @@ export function getWeatherIcon(code: number): string {
 
 export function getWeatherDescription(code: number): string {
   return WEATHER_CODE_MAP[code]?.description ?? 'Unknown';
+}
+
+export function getUvRecommendation(uv: number): { level: string; advice: string; color: string } {
+  if (uv <= 2) return { level: 'Low', advice: 'No protection needed.', color: 'text-emerald-600' };
+  if (uv <= 5) return { level: 'Moderate', advice: 'Wear sunglasses and use SPF 30+ sunscreen.', color: 'text-yellow-600' };
+  if (uv <= 7) return { level: 'High', advice: 'Limit sun exposure 10am–4pm. SPF 30+, hat, and shade.', color: 'text-orange-600' };
+  if (uv <= 10) return { level: 'Very High', advice: 'Minimize sun exposure. SPF 50+, protective clothing.', color: 'text-red-600' };
+  return { level: 'Extreme', advice: 'Avoid sun exposure. Full protection essential.', color: 'text-purple-600' };
+}
+
+export function calculateGrowingScore(temp: number, humidity: number, precipitation: number): number {
+  let score = 5;
+  // Temperature: ideal 20-30°C
+  if (temp >= 20 && temp <= 30) score += 3;
+  else if (temp >= 15 && temp <= 35) score += 1;
+  else score -= 1;
+
+  // Humidity: ideal 50-70%
+  if (humidity >= 50 && humidity <= 70) score += 2;
+  else if (humidity >= 40 && humidity <= 80) score += 0;
+  else score -= 1;
+
+  // Precipitation: moderate is good (0.5–5mm)
+  if (precipitation >= 0.5 && precipitation <= 5) score += 1;
+  else if (precipitation > 15) score -= 1;
+
+  return Math.max(1, Math.min(10, score));
 }

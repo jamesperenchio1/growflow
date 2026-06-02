@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,9 @@ import {
   AlertTriangle,
   Droplets,
   ShieldCheck as ShieldCheckIcon,
+  Clock,
+  ListChecks,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +61,8 @@ const severityConfig: Record<
     gradient: string;
     icon: React.ElementType;
     label: string;
+    barColor: string;
+    segments: number;
   }
 > = {
   low: {
@@ -65,6 +71,8 @@ const severityConfig: Record<
     gradient: "gradient-emerald",
     icon: ShieldCheck,
     label: "Low",
+    barColor: "bg-emerald-500",
+    segments: 1,
   },
   medium: {
     badgeClass:
@@ -72,6 +80,8 @@ const severityConfig: Record<
     gradient: "gradient-amber",
     icon: ShieldAlert,
     label: "Medium",
+    barColor: "bg-amber-500",
+    segments: 2,
   },
   high: {
     badgeClass:
@@ -79,8 +89,73 @@ const severityConfig: Record<
     gradient: "gradient-rose",
     icon: Shield,
     label: "High",
+    barColor: "bg-rose-500",
+    segments: 3,
   },
 };
+
+function usePreventionChecks(pestId: string | null) {
+  const storageKey = pestId ? `growflow-prevention-${pestId}` : null;
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!storageKey) {
+      setChecked(new Set());
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        setChecked(new Set(JSON.parse(raw)));
+      } else {
+        setChecked(new Set());
+      }
+    } catch {
+      setChecked(new Set());
+    }
+  }, [storageKey]);
+
+  const toggle = (item: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(item)) next.delete(item);
+      else next.add(item);
+      if (storageKey) {
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+      }
+      return next;
+    });
+  };
+
+  return { checked, toggle };
+}
+
+function SeverityGauge({ severity }: { severity: Severity }) {
+  const config = severityConfig[severity];
+  const totalSegments = 4;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex gap-1">
+          {Array.from({ length: totalSegments }, (_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-2 flex-1 rounded-full transition-colors",
+                i < config.segments ? config.barColor : "bg-muted"
+              )}
+            />
+          ))}
+        </div>
+        <Badge variant="outline" className={cn("text-[10px] h-5 shrink-0", config.badgeClass)}>
+          <config.icon className="size-3 mr-1" />
+          {config.label}
+        </Badge>
+      </div>
+    </div>
+  );
+}
 
 function DetailDialog({
   item,
@@ -91,6 +166,8 @@ function DetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { checked, toggle } = usePreventionChecks(item?.id ?? null);
+
   if (!item) return null;
   const sev = severityConfig[item.severity];
   const CategoryIcon = item.category === "pest" ? Bug : Sprout;
@@ -116,7 +193,9 @@ function DetailDialog({
           <DialogDescription>{item.symptoms[0]}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 mt-2">
+        <div className="space-y-6 mt-2">
+          <SeverityGauge severity={item.severity} />
+
           <div>
             <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
               <AlertTriangle className="size-4 text-amber-500" />
@@ -133,6 +212,30 @@ function DetailDialog({
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Treatment Timeline */}
+          <div>
+            <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <Clock className="size-4 text-blue-500" />
+              Treatment Timeline
+            </h4>
+            <div className="relative">
+              <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border" />
+              <div className="space-y-3">
+                {item.treatmentTimeline.map((step, i) => (
+                  <div key={i} className="flex items-start gap-3 pl-1">
+                    <div className="relative z-10 flex items-center justify-center size-6 rounded-full bg-blue-100 dark:bg-blue-950/30 text-blue-600 text-[10px] font-bold shrink-0">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{step.day}</p>
+                      <p className="text-sm text-muted-foreground">{step.action}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div>
@@ -153,22 +256,34 @@ function DetailDialog({
             </ul>
           </div>
 
+          {/* Prevention Checklist */}
           <div>
-            <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-              <ShieldCheckIcon className="size-4 text-emerald-500" />
-              Prevention
+            <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <ListChecks className="size-4 text-emerald-500" />
+              Prevention Checklist
             </h4>
-            <ul className="space-y-1.5">
+            <div className="space-y-2">
               {item.prevention.map((p, i) => (
-                <li
+                <label
                   key={i}
-                  className="text-sm text-muted-foreground flex gap-2"
+                  className={cn(
+                    "flex items-start gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors",
+                    checked.has(p)
+                      ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-900/30"
+                      : "bg-muted border-transparent hover:bg-muted/80"
+                  )}
                 >
-                  <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
-                  <span>{p}</span>
-                </li>
+                  <Checkbox
+                    checked={checked.has(p)}
+                    onCheckedChange={() => toggle(p)}
+                    className="mt-0.5"
+                  />
+                  <span className={cn("text-sm", checked.has(p) && "line-through opacity-60")}>
+                    {p}
+                  </span>
+                </label>
               ))}
-            </ul>
+            </div>
           </div>
 
           <div>
@@ -220,7 +335,7 @@ export default function PestsPage() {
 
   return (
     <PageShell>
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Header */}
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
@@ -233,7 +348,7 @@ export default function PestsPage() {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
@@ -301,7 +416,7 @@ export default function PestsPage() {
 
         {/* Cards Grid */}
         {filtered.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((item) => {
               const sev = severityConfig[item.severity];
               const CategoryIcon = item.category === "pest" ? Bug : Sprout;
@@ -310,38 +425,37 @@ export default function PestsPage() {
                 <Card
                   key={item.id}
                   className={cn(
-                    "border-0 shadow-sm flex flex-col card-hover",
+                    "border-0 shadow-sm flex flex-col card-hover p-6",
                     sev.gradient
                   )}
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
+                  <CardHeader className="pb-4 p-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div
                           className={cn(
-                            "icon-circle size-9",
+                            "icon-circle size-10 shrink-0",
                             item.category === "pest"
                               ? "bg-red-100 text-red-600 dark:bg-red-950/30"
                               : "bg-purple-100 text-purple-600 dark:bg-purple-950/30"
                           )}
                         >
-                          <CategoryIcon className="size-4" />
+                          <CategoryIcon className="size-5" />
                         </div>
-                        <div>
-                          <CardTitle className="text-base">
+                        <div className="min-w-0">
+                          <CardTitle className="text-base leading-tight">
                             {item.name}
                           </CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+                            {item.category} • {item.affectedPlants.length} plants affected
+                          </p>
                         </div>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={cn("text-[10px] h-5", sev.badgeClass)}
-                      >
-                        <sev.icon className="size-3 mr-1" />
-                        {sev.label}
-                      </Badge>
                     </div>
-                    <div className="mt-2 space-y-1">
+                    <div className="mt-3">
+                      <SeverityGauge severity={item.severity} />
+                    </div>
+                    <div className="mt-4 space-y-1.5">
                       {item.symptoms.slice(0, 3).map((symptom, i) => (
                         <p
                           key={i}
@@ -352,9 +466,9 @@ export default function PestsPage() {
                       ))}
                     </div>
                   </CardHeader>
-                  <CardContent className="mt-auto pt-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-wrap gap-1">
+                  <CardContent className="mt-auto pt-0 p-0">
+                    <div className="flex items-center justify-between gap-3 mt-4">
+                      <div className="flex flex-wrap gap-1 min-w-0">
                         {item.affectedPlants.slice(0, 3).map((plant) => (
                           <Badge
                             key={plant}
@@ -372,10 +486,11 @@ export default function PestsPage() {
                       </div>
                       <Button
                         size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs shrink-0"
                         onClick={() => handleOpenDetail(item)}
                       >
                         View Details
+                        <ChevronRight className="size-3 ml-1" />
                       </Button>
                     </div>
                   </CardContent>

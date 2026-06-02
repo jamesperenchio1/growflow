@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Leaf, Search, Plus, Droplets, Sun, BookOpen } from "lucide-react";
+import { Leaf, Search, Plus, Droplets, Sun, BookOpen, Carrot, Apple, Flower } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePlants } from "@/hooks/use-plants";
 import { db } from "@/lib/db";
+import { getPlantImage } from "@/data/plant-images";
 import { cn } from "@/lib/utils";
 
 const categories = ["all", "vegetable", "herb", "fruit", "flower"] as const;
@@ -19,6 +20,13 @@ const categoryColors: Record<string, string> = {
   herb: "bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-300",
   fruit: "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300",
   flower: "bg-violet-100 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
+};
+
+const categoryIcons: Record<string, typeof Leaf> = {
+  vegetable: Carrot,
+  herb: Leaf,
+  fruit: Apple,
+  flower: Flower,
 };
 
 export default function PlantsPage() {
@@ -115,72 +123,77 @@ export default function PlantsPage() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((plant) => (
-              <Card
-                key={plant.id}
-                className="card-hover cursor-pointer shadow-sm"
-                onClick={() => router.push(`/plants/detail?id=${plant.id}`)}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="icon-circle size-11 bg-emerald-50 dark:bg-emerald-950/30 overflow-hidden">
-                        {plant.photoUrl ? (
-                          <img src={plant.photoUrl} alt={plant.name} className="size-11 object-cover" />
-                        ) : (
-                          <Leaf className="size-5 text-emerald-500" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate">{plant.name}</p>
-                        {plant.variety && (
-                          <p className="text-xs text-muted-foreground truncate">{plant.variety}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <Badge variant="secondary" className={cn("text-xs capitalize shrink-0", categoryColors[plant.category])}>
-                        {plant.category}
-                      </Badge>
-                      {plant.id !== undefined && plantsWithLogs.has(plant.id) && (
-                        <Badge variant="outline" className="text-[10px] h-5 gap-1">
-                          <BookOpen className="size-3" />
-                          Journal
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Droplets className="size-3.5" />
-                      <span className="capitalize">{plant.growingMethod}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Sun className="size-3.5" />
-                      {new Date(plant.plantedDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </span>
-                  </div>
-                  {plant.healthTags.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {plant.healthTags.map((tag, i) => (
-                        <Badge
-                          key={i}
-                          variant="secondary"
-                          className={cn(
-                            "text-xs",
-                            tag.severity === "high" && "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300",
-                            tag.severity === "medium" && "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300",
-                            tag.severity === "low" && "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
+            {filtered.map((plant) => {
+              const img = plant.photoUrl ?? getPlantImage(plant.name)?.url;
+              const CategoryIcon = categoryIcons[plant.category] ?? Leaf;
+              return (
+                <Card
+                  key={plant.id}
+                  className="card-hover cursor-pointer shadow-sm"
+                  onClick={() => router.push(`/plants/detail?id=${plant.id}`)}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="icon-circle size-11 bg-emerald-50 dark:bg-emerald-950/30 overflow-hidden rounded-xl">
+                          {img ? (
+                            <img src={img} alt={plant.name} className="w-full h-full object-cover aspect-square" />
+                          ) : (
+                            <Leaf className="size-5 text-emerald-500" />
                           )}
-                        >
-                          {tag.value}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{plant.name}</p>
+                          {plant.variety && (
+                            <p className="text-xs text-muted-foreground truncate">{plant.variety}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <Badge variant="secondary" className={cn("text-xs capitalize shrink-0 gap-1", categoryColors[plant.category])}>
+                          <CategoryIcon className="size-3" />
+                          {plant.category}
                         </Badge>
-                      ))}
+                        {plant.id !== undefined && plantsWithLogs.has(plant.id) && (
+                          <Badge variant="outline" className="text-[10px] h-5 gap-1">
+                            <BookOpen className="size-3" />
+                            Journal
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Droplets className="size-3.5" />
+                        <span className="capitalize">{plant.growingMethod}</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Sun className="size-3.5" />
+                        {new Date(plant.plantedDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                    {plant.healthTags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {plant.healthTags.map((tag, i) => (
+                          <Badge
+                            key={i}
+                            variant="secondary"
+                            className={cn(
+                              "text-xs",
+                              tag.severity === "high" && "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300",
+                              tag.severity === "medium" && "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300",
+                              tag.severity === "low" && "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
+                            )}
+                          >
+                            {tag.value}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

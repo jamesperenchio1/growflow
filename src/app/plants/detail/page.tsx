@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   Leaf, ArrowLeft, Trash2, Sprout, Droplets, Sun, CalendarDays, StickyNote,
   Beaker, TrendingUp, BookOpen, Camera, Scale, Plus, X, Milestone,
-  Ruler, Bug, FlaskConical, Eye, NotebookPen, FileImage
+  Ruler, Bug, FlaskConical, Eye, NotebookPen, FileImage, Carrot, Apple, Flower
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,9 +17,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select } from "@/components/ui/select";
 import { usePlantDetail } from "@/hooks/use-plant-detail";
 import { usePlants } from "@/hooks/use-plants";
-import { db } from "@/lib/db";
 import { useTasks } from "@/hooks/use-tasks";
+import { db } from "@/lib/db";
 import { getSeedPlantByName } from "@/data/seed-plants";
+import { getPlantImage } from "@/data/plant-images";
 import { getNutrientTarget } from "@/data/nutrients";
 import { getYieldReference } from "@/data/yield-references";
 import { getMoonPhase } from "@/lib/api/moon";
@@ -59,6 +60,20 @@ const logTypeMeta: Record<string, { label: string; icon: typeof Leaf; color: str
 
 const photoTypeOptions = ["plant", "seed_packet", "issue"] as const;
 
+const categoryColors: Record<string, string> = {
+  vegetable: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
+  herb: "bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-300",
+  fruit: "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300",
+  flower: "bg-violet-100 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
+};
+
+const categoryIcons: Record<string, typeof Leaf> = {
+  vegetable: Carrot,
+  herb: Leaf,
+  fruit: Apple,
+  flower: Flower,
+};
+
 function computeGrowthStage(days: number, ref?: PlantReference): string {
   if (!ref) return "growing";
   if (days < ref.daysToGermination) return "germination";
@@ -72,7 +87,7 @@ function computeGrowthStage(days: number, ref?: PlantReference): string {
 
 function StatPill({ icon: Icon, label, value, color }: { icon: typeof Leaf; label: string; value: string; color: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl bg-muted px-4 py-3">
       <div className={cn("icon-circle size-9", color)}>
         <Icon className="size-4 text-white" />
       </div>
@@ -317,6 +332,8 @@ function PlantDetailContent() {
 
   const growthStage = computeGrowthStage(daysSincePlanted, refData);
   const yieldRef = getYieldReference(plant.name);
+  const heroImage = plant.photoUrl ?? getPlantImage(plant.name)?.url;
+  const CategoryIcon = categoryIcons[plant.category] ?? Leaf;
 
   return (
     <PageShell>
@@ -335,7 +352,8 @@ function PlantDetailContent() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="text-xs capitalize">
+                <Badge variant="secondary" className={cn("text-xs capitalize gap-1", categoryColors[plant.category])}>
+                  <CategoryIcon className="size-3" />
                   {plant.category}
                 </Badge>
                 <Badge variant="outline" className="text-xs capitalize">
@@ -382,8 +400,19 @@ function PlantDetailContent() {
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <div className="space-y-5">
+            {/* Hero Image */}
+            {heroImage ? (
+              <div className="rounded-xl overflow-hidden aspect-[16/9] sm:aspect-[21/9] bg-muted">
+                <img src={heroImage} alt={plant.name} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="rounded-xl overflow-hidden aspect-[16/9] sm:aspect-[21/9] bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-950/20 dark:to-teal-950/20 flex items-center justify-center">
+                <Leaf className="size-16 text-emerald-300 dark:text-emerald-700" />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatPill icon={Leaf} label="Category" value={plant.category} color="bg-emerald-500" />
+              <StatPill icon={CategoryIcon} label="Category" value={plant.category} color="bg-emerald-500" />
               <StatPill icon={CalendarDays} label="Age" value={`${daysSincePlanted}d`} color="bg-blue-500" />
               <StatPill icon={Sun} label="Sun" value={refData ? `${refData.sunHours}h/day` : "—"} color="bg-amber-500" />
               <StatPill icon={Sprout} label="Tasks" value={`${plantTasks.filter((t) => !t.completed).length} open`} color="bg-purple-500" />
@@ -441,7 +470,7 @@ function PlantDetailContent() {
                         const target = getNutrientTarget(plant.name, stage);
                         if (!target) return null;
                         return (
-                          <div key={stage} className="flex items-center justify-between rounded-xl border px-4 py-2.5 transition-colors hover:bg-accent/30">
+                          <div key={stage} className="flex items-center justify-between rounded-xl border px-4 py-2.5 transition-colors hover:bg-accent">
                             <span className="text-sm font-medium capitalize">{stage}</span>
                             <div className="flex gap-2 text-xs font-semibold">
                               <span className="text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full">
@@ -500,17 +529,17 @@ function PlantDetailContent() {
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-xl bg-card/60 px-4 py-3">
+                    <div className="rounded-xl bg-card px-4 py-3">
                       <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Expected Yield</p>
                       <p className="font-bold text-lg mt-0.5">~{yieldRef.expectedYieldGramsPerPlant}g</p>
                       <p className="text-[10px] text-muted-foreground">per plant</p>
                     </div>
-                    <div className="rounded-xl bg-card/60 px-4 py-3">
+                    <div className="rounded-xl bg-card px-4 py-3">
                       <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">First Harvest</p>
                       <p className="font-bold text-lg mt-0.5">~{yieldRef.daysToFirstHarvest}d</p>
                       <p className="text-[10px] text-muted-foreground">after planting</p>
                     </div>
-                    <div className="rounded-xl bg-card/60 px-4 py-3">
+                    <div className="rounded-xl bg-card px-4 py-3">
                       <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Harvest Window</p>
                       <p className="font-bold text-lg mt-0.5">{yieldRef.daysToFirstHarvest}-{yieldRef.daysToLastHarvest}d</p>
                       <p className="text-[10px] text-muted-foreground">total range</p>
@@ -536,7 +565,7 @@ function PlantDetailContent() {
                       <div
                         key={task.id}
                         className={cn(
-                          "flex items-center justify-between rounded-xl border px-4 py-3 transition-colors hover:bg-accent/30",
+                          "flex items-center justify-between rounded-xl border px-4 py-3 transition-colors hover:bg-accent",
                           task.completed && "opacity-50 line-through"
                         )}
                       >
@@ -713,15 +742,15 @@ function PlantDetailContent() {
 
             {yields.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl bg-muted/40 px-4 py-3">
+                <div className="rounded-xl bg-muted px-4 py-3">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Total Yield</p>
                   <p className="font-bold text-lg mt-0.5">{totalYield}g</p>
                 </div>
-                <div className="rounded-xl bg-muted/40 px-4 py-3">
+                <div className="rounded-xl bg-muted px-4 py-3">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Harvests</p>
                   <p className="font-bold text-lg mt-0.5">{yields.length}</p>
                 </div>
-                <div className="rounded-xl bg-muted/40 px-4 py-3">
+                <div className="rounded-xl bg-muted px-4 py-3">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Average</p>
                   <p className="font-bold text-lg mt-0.5">{avgYield}g</p>
                 </div>
@@ -753,7 +782,7 @@ function PlantDetailContent() {
                 <CardContent className="p-0">
                   <div className="divide-y">
                     {yields.map((y) => (
-                      <div key={y.id} className="flex items-center justify-between px-4 py-3 hover:bg-accent/30 transition-colors">
+                      <div key={y.id} className="flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors">
                         <div>
                           <p className="text-sm font-medium">{y.amountGrams}g harvested</p>
                           <p className="text-xs text-muted-foreground">

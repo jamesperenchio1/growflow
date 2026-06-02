@@ -1,10 +1,11 @@
 "use client";
 
-import { MapPin, Ruler, Bell, AlertTriangle, Trash2, RefreshCw, Github, Check, X, Send } from "lucide-react";
+import { MapPin, Ruler, Bell, AlertTriangle, Trash2, RefreshCw, Github, Check, X, Send, Wifi } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/store/app-store";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useState } from "react";
@@ -51,7 +52,7 @@ function ToggleRow({
 }
 
 export default function SettingsPage() {
-  const { location, units, thaiHazardsEnabled, setUnits, toggleThaiHazards, setLocation } = useAppStore();
+  const { location, units, thaiHazardsEnabled, setUnits, toggleThaiHazards, setLocation, mqttConfig, setMqttConfig } = useAppStore();
   const [refreshing, setRefreshing] = useState(false);
   const {
     permission,
@@ -92,14 +93,14 @@ export default function SettingsPage() {
 
   return (
     <PageShell>
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
           <p className="text-sm text-muted-foreground mt-1">Configure your garden preferences and app settings.</p>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          <Card className="shadow-sm">
+          <Card className="shadow-sm border-0">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <div className="icon-circle size-9 bg-emerald-100 dark:bg-emerald-950/30">
@@ -125,7 +126,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="shadow-sm border-0">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <div className="icon-circle size-9 bg-blue-100 dark:bg-blue-950/30">
@@ -159,7 +160,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="shadow-sm border-0">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <div className="icon-circle size-9 bg-amber-100 dark:bg-amber-950/30">
@@ -186,7 +187,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="shadow-sm border-0">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <div className="icon-circle size-9 bg-purple-100 dark:bg-purple-950/30">
@@ -288,6 +289,89 @@ export default function SettingsPage() {
                   </Button>
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          {/* MQTT Configuration */}
+          <Card className="shadow-sm border-0 md:col-span-2">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className="icon-circle size-9 bg-cyan-100 dark:bg-cyan-950/30">
+                  <Wifi className="size-4 text-cyan-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">MQTT Broker</CardTitle>
+                  <CardDescription>Connect ESP32/Arduino devices via MQTT for advanced IoT integration</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between rounded-xl border px-4 py-3">
+                <span className="text-sm font-medium">Enable MQTT</span>
+                <Button
+                  variant={mqttConfig.enabled ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setMqttConfig({ enabled: !mqttConfig.enabled })}
+                  className={cn(mqttConfig.enabled && "bg-emerald-600 hover:bg-emerald-700")}
+                >
+                  {mqttConfig.enabled ? "On" : "Off"}
+                </Button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Broker URL</label>
+                  <Input
+                    placeholder="e.g. broker.hivemq.com"
+                    value={mqttConfig.brokerUrl}
+                    onChange={(e) => setMqttConfig({ brokerUrl: e.target.value })}
+                    disabled={!mqttConfig.enabled}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Port</label>
+                  <Input
+                    type="number"
+                    placeholder="1883"
+                    value={mqttConfig.port}
+                    onChange={(e) => setMqttConfig({ port: Number(e.target.value) })}
+                    disabled={!mqttConfig.enabled}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Username (optional)</label>
+                  <Input
+                    placeholder="MQTT username"
+                    value={mqttConfig.username}
+                    onChange={(e) => setMqttConfig({ username: e.target.value })}
+                    disabled={!mqttConfig.enabled}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Password (optional)</label>
+                  <Input
+                    type="password"
+                    placeholder="MQTT password"
+                    value={mqttConfig.password}
+                    onChange={(e) => setMqttConfig({ password: e.target.value })}
+                    disabled={!mqttConfig.enabled}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Topic Pattern</label>
+                <Input
+                  placeholder="growflow/{deviceId}/{sensorType}"
+                  value={mqttConfig.topicPattern}
+                  onChange={(e) => setMqttConfig({ topicPattern: e.target.value })}
+                  disabled={!mqttConfig.enabled}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use {"{deviceId}"} and {"{sensorType}"} as placeholders for dynamic topics.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>

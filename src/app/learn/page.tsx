@@ -250,7 +250,7 @@ export default function LearnPage() {
                   "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <Icon className="size-3.5" />
@@ -264,7 +264,7 @@ export default function LearnPage() {
               "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               activeCategory === "favorites"
                 ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             <Heart
@@ -307,7 +307,7 @@ export default function LearnPage() {
                   >
                     <CardContent className="p-5">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="icon-circle size-8 bg-white/60 dark:bg-white/10">
+                        <div className="icon-circle size-8 bg-white dark:bg-white">
                           <Icon className="size-4 text-foreground" />
                         </div>
                         <Badge
@@ -502,7 +502,7 @@ export default function LearnPage() {
               { author: "McGill University", title: "", desc: "Hydroponics nutrient research and EC/pH management guidelines." },
               { author: "Open-Meteo", title: "", desc: "Free weather API providing global forecast data without API keys." },
             ].map((source) => (
-              <div key={source.author} className="rounded-xl border bg-card/50 p-3.5">
+              <div key={source.author} className="rounded-xl border bg-card p-3.5">
                 <p className="font-semibold text-foreground text-sm">
                   {source.author} {source.title && <span className="text-muted-foreground">— <em>{source.title}</em>{source.edition && `, ${source.edition}`}</span>}
                 </p>
@@ -605,7 +605,7 @@ export default function LearnPage() {
                       <button
                         key={related.id}
                         onClick={() => setDialogTip(related)}
-                        className="w-full text-left rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                        className="w-full text-left rounded-lg border p-3 hover:bg-muted transition-colors"
                       >
                         <p className="text-sm font-medium">{related.title}</p>
                         <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">

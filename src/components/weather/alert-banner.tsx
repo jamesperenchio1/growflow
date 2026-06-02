@@ -20,6 +20,8 @@ const severityConfig = {
     iconColor: 'text-rose-600',
     badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
     label: 'Extreme',
+    textColor: 'text-rose-700 dark:text-rose-300',
+    timeline: 'Peak risk: next 24–48 hours',
   },
   high: {
     border: 'border-l-amber-500',
@@ -28,6 +30,8 @@ const severityConfig = {
     iconColor: 'text-amber-600',
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     label: 'High',
+    textColor: 'text-amber-700 dark:text-amber-300',
+    timeline: 'Peak risk: next 24–72 hours',
   },
   moderate: {
     border: 'border-l-yellow-400',
@@ -36,6 +40,8 @@ const severityConfig = {
     iconColor: 'text-yellow-600',
     badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300',
     label: 'Moderate',
+    textColor: 'text-yellow-700 dark:text-yellow-300',
+    timeline: 'Watch conditions over next 3 days',
   },
   low: {
     border: 'border-l-blue-400',
@@ -44,6 +50,8 @@ const severityConfig = {
     iconColor: 'text-blue-600',
     badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
     label: 'Low',
+    textColor: 'text-blue-700 dark:text-blue-300',
+    timeline: 'Minimal risk expected',
   },
 };
 
@@ -76,26 +84,29 @@ export function AlertBanner({ alerts, onViewAll }: AlertBannerProps) {
   return (
     <div
       className={cn(
-        'relative rounded-xl border-0 shadow-sm border-l-4 p-4 mb-5',
+        'relative rounded-xl border-0 shadow-md border-l-4 p-5',
         config.border,
         config.bg
       )}
     >
-      <div className="flex items-start gap-3 pr-8">
-        <div className={cn('icon-circle size-9 shrink-0', config.iconBg, config.iconColor)}>
+      <div className="flex items-start gap-4 pr-8">
+        <div className={cn('icon-circle size-10 shrink-0', config.iconBg, config.iconColor)}>
           <HazardIcon type={topAlert.type} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-semibold text-sm">{topAlert.title}</h4>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <h4 className={cn('font-semibold text-sm', config.textColor)}>{topAlert.title}</h4>
             <Badge className={cn('text-[10px] px-1.5 py-0', config.badge)}>{config.label}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5">{topAlert.description}</p>
+          <p className="text-sm text-muted-foreground">{topAlert.description}</p>
+          <p className="text-xs mt-2 font-medium opacity-90">
+            Timeline: {config.timeline}
+          </p>
           <p className="text-xs mt-1.5 opacity-80">
             <span className="font-medium">Action:</span> {topAlert.farmingAction}
           </p>
           {alerts.length > 1 && (
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2 font-medium">
               +{alerts.length - 1} more alert{alerts.length > 2 ? 's' : ''}
             </p>
           )}
@@ -113,7 +124,7 @@ export function AlertBanner({ alerts, onViewAll }: AlertBannerProps) {
       </div>
       <button
         onClick={() => setDismissed(true)}
-        className="absolute top-2 right-2 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+        className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
         aria-label="Dismiss alert"
       >
         <X className="size-4 text-muted-foreground" />

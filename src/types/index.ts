@@ -18,6 +18,7 @@ export interface Plant {
   tags: string[];
   notes?: string;
   photoUrl?: string;
+  quantity?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +39,10 @@ export interface GrowingSpace {
   depthCm?: number;
   location?: string;
   notes?: string;
+  capacity?: number;
+  gridRows?: number;
+  gridCols?: number;
+  subdividable?: boolean;
   createdAt: Date;
 }
 
@@ -47,6 +52,8 @@ export interface SpacePlant {
   plantId: number;
   x: number;
   y: number;
+  subX?: number;
+  subY?: number;
   placedAt: Date;
 }
 
@@ -134,6 +141,19 @@ export interface AppSettings {
   value: unknown;
 }
 
+export interface DailyWeather {
+  time: string[];
+  weatherCode: number[];
+  temperatureMax: number[];
+  temperatureMin: number[];
+  precipitationSum: number[];
+  precipitationProbabilityMax: number[];
+  windSpeedMax: number[];
+  uvIndexMax: number[];
+  sunrise: string[];
+  sunset: string[];
+}
+
 export interface WeatherData {
   current: {
     temperature: number;
@@ -155,18 +175,8 @@ export interface WeatherData {
     precipitation: number[];
     humidity: number[];
   };
-  daily: {
-    time: string[];
-    weatherCode: number[];
-    temperatureMax: number[];
-    temperatureMin: number[];
-    precipitationSum: number[];
-    precipitationProbabilityMax: number[];
-    windSpeedMax: number[];
-    uvIndexMax: number[];
-    sunrise: string[];
-    sunset: string[];
-  };
+  daily: DailyWeather;
+  history: DailyWeather;
 }
 
 export interface MoonPhase {
@@ -186,6 +196,7 @@ export interface CompanionRelation {
 export interface PlantReference {
   name: string;
   category: PlantCategory;
+  imageUrl?: string;
   methods: GrowingMethod[];
   daysToGermination: number;
   daysToSeedling: number;
@@ -228,6 +239,8 @@ export interface ThaiHazard {
 export type SystemDifficulty = 'beginner' | 'intermediate' | 'advanced';
 export type MaintenanceLevel = 'low' | 'medium' | 'high';
 export type SetupCost = 'low' | 'medium' | 'high';
+export type YieldPotential = 'low' | 'medium' | 'high';
+export type UserSystemStatus = 'planning' | 'building' | 'active';
 
 export interface GrowingSystem {
   id: string;
@@ -239,4 +252,15 @@ export interface GrowingSystem {
   cons: string[];
   setupCost: SetupCost;
   maintenanceLevel: MaintenanceLevel;
+  yieldPotential: YieldPotential;
+  materials: string[];
+  setupSteps: string[];
+}
+
+export interface UserSystem {
+  id: string;
+  systemId: string;
+  name: string;
+  status: UserSystemStatus;
+  dateAdded: string;
 }

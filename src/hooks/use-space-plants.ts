@@ -6,9 +6,9 @@ interface UseSpacePlantsResult {
   spacePlants: SpacePlant[];
   loading: boolean;
   getSpacePlants: (spaceId: number) => Promise<SpacePlant[]>;
-  addPlantToSpace: (spaceId: number, plantId: number, x: number, y: number) => Promise<number>;
+  addPlantToSpace: (spaceId: number, plantId: number, x: number, y: number, subX?: number, subY?: number) => Promise<number>;
   removePlantFromSpace: (id: number) => Promise<void>;
-  movePlantInSpace: (id: number, x: number, y: number) => Promise<void>;
+  movePlantInSpace: (id: number, x: number, y: number, subX?: number, subY?: number) => Promise<void>;
   refresh: (spaceId: number) => Promise<void>;
 }
 
@@ -40,12 +40,14 @@ export function useSpacePlants(spaceId?: number): UseSpacePlantsResult {
     return data;
   }, []);
 
-  const addPlantToSpace = useCallback(async (targetSpaceId: number, plantId: number, x: number, y: number) => {
+  const addPlantToSpace = useCallback(async (targetSpaceId: number, plantId: number, x: number, y: number, subX?: number, subY?: number) => {
     const id = await db.spacePlants.add({
       spaceId: targetSpaceId,
       plantId,
       x,
       y,
+      subX,
+      subY,
       placedAt: new Date(),
     });
     if (spaceId !== undefined) await refresh(spaceId);
@@ -57,8 +59,8 @@ export function useSpacePlants(spaceId?: number): UseSpacePlantsResult {
     if (spaceId !== undefined) await refresh(spaceId);
   }, [spaceId, refresh]);
 
-  const movePlantInSpace = useCallback(async (id: number, x: number, y: number) => {
-    await db.spacePlants.update(id, { x, y });
+  const movePlantInSpace = useCallback(async (id: number, x: number, y: number, subX?: number, subY?: number) => {
+    await db.spacePlants.update(id, { x, y, subX, subY });
     if (spaceId !== undefined) await refresh(spaceId);
   }, [spaceId, refresh]);
 

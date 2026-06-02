@@ -38,7 +38,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card/80 backdrop-blur-xl px-4">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background px-4 lg:px-6">
         <Button
           variant="ghost"
           size="icon"
@@ -50,9 +50,9 @@ export function Header() {
         </Button>
 
         <div className="flex flex-col">
-          <h1 className="text-sm font-semibold leading-tight">{info.title}</h1>
+          <h1 className="text-base font-semibold leading-tight tracking-tight">{info.title}</h1>
           {info.subtitle && (
-            <span className="text-[11px] text-muted-foreground leading-tight">{info.subtitle}</span>
+            <span className="text-xs text-muted-foreground leading-tight">{info.subtitle}</span>
           )}
         </div>
 
@@ -61,8 +61,8 @@ export function Header() {
           <button
             onClick={() => setGardenDropdownOpen(!gardenDropdownOpen)}
             className={cn(
-              "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-accent/50",
-              gardenDropdownOpen && "bg-accent/50"
+              "flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-accent",
+              gardenDropdownOpen && "bg-accent"
             )}
           >
             <Flower2 className="size-3.5 text-emerald-600" />
@@ -90,7 +90,7 @@ export function Header() {
                       "flex items-center justify-between w-full rounded-lg px-3 py-2 text-sm transition-colors",
                       garden.id === activeGardenId
                         ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                        : "hover:bg-accent/50 text-foreground"
+                        : "hover:bg-accent text-foreground"
                     )}
                   >
                     <span className="truncate">{garden.name}</span>
@@ -105,7 +105,7 @@ export function Header() {
                     setGardenDropdownOpen(false);
                     setManagerOpen(true);
                   }}
-                  className="flex items-center w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
+                  className="flex items-center w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors"
                 >
                   Manage Gardens
                 </button>
