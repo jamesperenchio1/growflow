@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Grid3x3, Plus, Leaf, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Grid3x3, Plus, Leaf, Trash2, Droplets } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,20 @@ const spaceTypeLabels: Record<SpaceType, string> = {
   kratky: "Kratky",
 };
 
+const spaceTypeIcons: Record<SpaceType, string> = {
+  raised_bed: "🌱",
+  container: "🪴",
+  nft: "💧",
+  dwc: "🏊",
+  ebb_flow: "🌊",
+  dutch_bucket: "🪣",
+  vertical_tower: "🏗️",
+  aquaponic: "🐟",
+  aeroponic: "💨",
+  wicking: "🕯️",
+  kratky: "📦",
+};
+
 const spaceTypes: SpaceType[] = [
   "raised_bed",
   "container",
@@ -41,6 +56,7 @@ const spaceTypes: SpaceType[] = [
 ];
 
 export default function PlannerPage() {
+  const router = useRouter();
   const { spaces, loading, addSpace, deleteSpace } = useSpaces();
   const { plants } = usePlants();
   const [open, setOpen] = useState(false);
@@ -57,20 +73,20 @@ export default function PlannerPage() {
 
   return (
     <PageShell>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Planner</h2>
-            <p className="text-muted-foreground">Manage your growing spaces and layouts.</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage your growing spaces and layouts.</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 <Plus className="size-4" />
                 Add Space
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>New Growing Space</DialogTitle>
               </DialogHeader>
@@ -85,16 +101,16 @@ export default function PlannerPage() {
                     id="type"
                     value={type}
                     onChange={(e) => setType(e.target.value as SpaceType)}
-                    className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {spaceTypes.map((t) => (
                       <option key={t} value={t}>
-                        {spaceTypeLabels[t]}
+                        {spaceTypeIcons[t]} {spaceTypeLabels[t]}
                       </option>
                     ))}
                   </select>
                 </div>
-                <Button onClick={handleAdd} disabled={!name.trim()} className="w-full">
+                <Button onClick={handleAdd} disabled={!name.trim()} className="w-full bg-emerald-600 hover:bg-emerald-700">
                   Create Space
                 </Button>
               </div>
@@ -105,15 +121,23 @@ export default function PlannerPage() {
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="h-48 animate-pulse bg-muted" />
+              <Card key={i} className="h-52 animate-pulse bg-muted border-0" />
             ))}
           </div>
         ) : spaces.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Grid3x3 className="size-10 text-muted-foreground/50" />
-              <p className="mt-3 text-sm text-muted-foreground">No growing spaces yet</p>
-              <p className="text-xs text-muted-foreground">Add your first bed, container, or hydro system</p>
+          <Card className="shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="icon-circle size-16 bg-emerald-100 dark:bg-emerald-950/30 mb-4">
+                <Grid3x3 className="size-8 text-emerald-500" />
+              </div>
+              <p className="text-base font-medium text-muted-foreground">No growing spaces yet</p>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                Add your first bed, container, or hydro system to start planning your garden layout
+              </p>
+              <Button className="mt-4 gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => setOpen(true)}>
+                <Plus className="size-4" />
+                Add Your First Space
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -121,16 +145,19 @@ export default function PlannerPage() {
             {spaces.map((space) => {
               const spacePlants = plants.filter((p) => p.spaceId === space.id);
               return (
-                <Card key={space.id}>
-                  <CardHeader className="flex flex-row items-start justify-between pb-2">
-                    <div>
-                      <CardTitle className="text-base">{space.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{spaceTypeLabels[space.type]}</p>
+                <Card key={space.id} className="card-hover shadow-sm">
+                  <CardHeader className="flex flex-row items-start justify-between pb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{spaceTypeIcons[space.type]}</span>
+                      <div>
+                        <CardTitle className="text-base">{space.name}</CardTitle>
+                        <p className="text-xs text-muted-foreground">{spaceTypeLabels[space.type]}</p>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-7 text-muted-foreground hover:text-destructive"
+                      className="size-8 text-muted-foreground/50 hover:text-destructive"
                       onClick={() => space.id && deleteSpace(space.id)}
                     >
                       <Trash2 className="size-4" />
@@ -138,20 +165,26 @@ export default function PlannerPage() {
                   </CardHeader>
                   <CardContent>
                     {spacePlants.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-6 text-center">
-                        <Leaf className="size-6 text-muted-foreground/40" />
-                        <p className="mt-1 text-xs text-muted-foreground">No plants yet</p>
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-8 text-center">
+                        <Leaf className="size-6 text-muted-foreground/30 mb-2" />
+                        <p className="text-xs text-muted-foreground">No plants yet</p>
+                        <Button variant="ghost" size="sm" className="mt-2 text-xs h-7 text-emerald-600" onClick={() => router.push("/plants/new")}>
+                          Add Plant
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {spacePlants.map((plant) => (
                           <div
                             key={plant.id}
-                            className="flex items-center gap-2 rounded-lg border px-3 py-2"
+                            className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-colors hover:bg-accent/40 cursor-pointer"
+                            onClick={() => router.push(`/plants/detail?id=${plant.id}`)}
                           >
-                            <Leaf className="size-4 text-emerald-500" />
-                            <span className="text-sm">{plant.name}</span>
-                            <span className="ml-auto text-xs text-muted-foreground capitalize">
+                            <div className="icon-circle size-8 bg-emerald-50 dark:bg-emerald-950/30">
+                              <Leaf className="size-4 text-emerald-500" />
+                            </div>
+                            <span className="text-sm font-medium">{plant.name}</span>
+                            <span className="ml-auto text-[11px] text-muted-foreground capitalize bg-muted/60 px-2 py-0.5 rounded-full">
                               {plant.category}
                             </span>
                           </div>

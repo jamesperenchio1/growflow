@@ -42,11 +42,13 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-12">
-      <div className="w-full max-w-xl space-y-6">
-        <div className="flex items-center justify-center gap-2">
-          <Sprout className="size-8 text-emerald-500" />
-          <h1 className="text-2xl font-bold">GrowFlow</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900 px-4 py-12">
+      <div className="w-full max-w-lg space-y-6">
+        <div className="flex items-center justify-center gap-2.5">
+          <div className="icon-circle size-10 bg-emerald-500 text-white">
+            <Sprout className="size-6" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">GrowFlow</h1>
         </div>
 
         <div className="flex justify-center gap-2">
@@ -54,17 +56,17 @@ export default function OnboardingPage() {
             <div
               key={s}
               className={cn(
-                "h-2 w-8 rounded-full transition-colors",
-                s <= step ? "bg-emerald-500" : "bg-muted"
+                "h-2 rounded-full transition-all duration-300",
+                s <= step ? "w-8 bg-emerald-500" : "w-8 bg-muted"
               )}
             />
           ))}
         </div>
 
         {step === 1 && (
-          <Card>
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>What do you grow?</CardTitle>
+              <CardTitle className="text-xl">What do you grow?</CardTitle>
               <CardDescription>Select your growing method</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -73,23 +75,23 @@ export default function OnboardingPage() {
                   key={method}
                   onClick={() => setGrowMethod(method)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors",
+                    "flex w-full items-center gap-4 rounded-xl border-2 px-5 py-4 text-left transition-all",
                     growMethod === method
-                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20"
-                      : "border-border hover:bg-accent"
+                      ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
+                      : "border-border hover:border-muted-foreground/30 hover:bg-accent/50"
                   )}
                 >
                   <div
                     className={cn(
-                      "flex size-5 items-center justify-center rounded-full border",
+                      "flex size-6 items-center justify-center rounded-full border-2 transition-colors",
                       growMethod === method
                         ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-muted-foreground"
+                        : "border-muted-foreground/30"
                     )}
                   >
-                    {growMethod === method && <Check className="size-3" />}
+                    {growMethod === method && <Check className="size-3.5" />}
                   </div>
-                  <span className="capitalize">{method}</span>
+                  <span className="text-base font-medium capitalize">{method}</span>
                 </button>
               ))}
             </CardContent>
@@ -97,16 +99,18 @@ export default function OnboardingPage() {
         )}
 
         {step === 2 && (
-          <Card>
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Where are you?</CardTitle>
+              <CardTitle className="text-xl">Where are you?</CardTitle>
               <CardDescription>We use this for weather and growing guidance</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3">
-                <MapPin className="size-5 text-muted-foreground" />
+              <div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 px-5 py-4">
+                <div className="icon-circle size-10 bg-emerald-100 dark:bg-emerald-950/30">
+                  <MapPin className="size-5 text-emerald-600" />
+                </div>
                 <div className="flex-1">
-                  <p className="font-medium">{location.name}</p>
+                  <p className="font-semibold">{location.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {location.lat.toFixed(4)}, {location.lon.toFixed(4)}
                   </p>
@@ -121,13 +125,13 @@ export default function OnboardingPage() {
         )}
 
         {step === 3 && (
-          <Card>
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Add your first plant</CardTitle>
+              <CardTitle className="text-xl">Add your first plant</CardTitle>
               <CardDescription>Select one or more to get started</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3">
                 {popularPlants.map((plant) => {
                   const Icon = plant.icon;
                   const isSelected = selectedPlants.includes(plant.name);
@@ -136,15 +140,20 @@ export default function OnboardingPage() {
                       key={plant.name}
                       onClick={() => togglePlant(plant.name)}
                       className={cn(
-                        "flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors",
+                        "flex flex-col items-center gap-2.5 rounded-xl border-2 p-5 text-center transition-all",
                         isSelected
-                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20"
-                          : "border-border hover:bg-accent"
+                          ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
+                          : "border-border hover:border-muted-foreground/30 hover:bg-accent/50"
                       )}
                     >
-                      <Icon className="size-8 text-emerald-500" />
+                      <div className={cn(
+                        "icon-circle size-12 transition-colors",
+                        isSelected ? "bg-emerald-100 dark:bg-emerald-950/30" : "bg-muted"
+                      )}>
+                        <Icon className={cn("size-6", isSelected ? "text-emerald-600" : "text-muted-foreground")} />
+                      </div>
                       <div>
-                        <p className="text-sm font-medium">{plant.name}</p>
+                        <p className="text-sm font-semibold">{plant.name}</p>
                         <p className="text-xs text-muted-foreground">{plant.category}</p>
                       </div>
                     </button>
@@ -159,7 +168,7 @@ export default function OnboardingPage() {
           <Button
             onClick={goNext}
             disabled={step === 1 && !growMethod}
-            className="gap-2"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
           >
             {step === 3 ? "Get Started" : "Next"}
             <ArrowRight className="size-4" />

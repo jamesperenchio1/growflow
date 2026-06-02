@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Leaf, Search, Plus, ArrowLeft } from "lucide-react";
+import { Leaf, Search, Plus, ArrowLeft, Sprout } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { usePlants } from "@/hooks/use-plants";
 import { seedPlants } from "@/data/seed-plants";
 import { generateTasksForPlant } from "@/lib/notifications";
@@ -22,7 +22,6 @@ export default function NewPlantPage() {
   const { addPlant } = usePlants();
   const [query, setQuery] = useState("");
   const [step, setStep] = useState<"search" | "form">("search");
-  const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<PlantCategory>("vegetable");
   const [method, setMethod] = useState<GrowingMethod>("soil");
@@ -33,7 +32,6 @@ export default function NewPlantPage() {
   );
 
   const handleSelect = (plantName: string) => {
-    setSelectedPlant(plantName);
     setName(plantName);
     const seed = seedPlants.find((p) => p.name === plantName);
     if (seed) {
@@ -44,7 +42,6 @@ export default function NewPlantPage() {
   };
 
   const handleCustom = () => {
-    setSelectedPlant(null);
     setStep("form");
   };
 
@@ -67,9 +64,9 @@ export default function NewPlantPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-xl space-y-6">
+      <div className="mx-auto max-w-xl space-y-5 page-enter">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/plants")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/plants")} className="text-muted-foreground">
             <ArrowLeft className="size-4" />
           </Button>
           <h2 className="text-2xl font-bold tracking-tight">Add Plant</h2>
@@ -83,31 +80,33 @@ export default function NewPlantPage() {
                 placeholder="Search plant database..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-11"
                 autoFocus
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="space-y-2">
               {filtered.slice(0, 12).map((plant) => (
                 <button
                   key={plant.name}
                   onClick={() => handleSelect(plant.name)}
-                  className="flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors hover:bg-accent"
+                  className="flex items-center gap-4 w-full rounded-xl border px-5 py-4 text-left transition-all hover:bg-accent/50 hover:border-muted-foreground/30"
                 >
-                  <Leaf className="size-5 text-emerald-500" />
+                  <div className="icon-circle size-10 bg-emerald-50 dark:bg-emerald-950/30">
+                    <Leaf className="size-5 text-emerald-500" />
+                  </div>
                   <div className="flex-1">
-                    <p className="font-medium">{plant.name}</p>
+                    <p className="font-semibold text-sm">{plant.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{plant.category}</p>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {plant.daysToHarvest}d
+                  <Badge variant="outline" className="text-[10px] h-5">
+                    {plant.daysToHarvest}d to harvest
                   </Badge>
                 </button>
               ))}
             </div>
 
-            <Button variant="outline" className="w-full gap-2" onClick={handleCustom}>
+            <Button variant="outline" className="w-full gap-2 h-11" onClick={handleCustom}>
               <Plus className="size-4" />
               Add Custom Plant
             </Button>
@@ -115,14 +114,14 @@ export default function NewPlantPage() {
         )}
 
         {step === "form" && (
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
               <CardTitle>Plant Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Name</label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Plant name" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Plant name" className="h-11" />
               </div>
 
               <div className="space-y-2">
@@ -133,10 +132,10 @@ export default function NewPlantPage() {
                       key={c}
                       onClick={() => setCategory(c)}
                       className={cn(
-                        "rounded-full border px-3 py-1 text-sm capitalize transition-colors",
+                        "rounded-full border-2 px-4 py-2 text-sm font-medium capitalize transition-all",
                         category === c
                           ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                          : "border-border hover:bg-accent"
+                          : "border-border hover:bg-accent hover:text-foreground"
                       )}
                     >
                       {c}
@@ -153,10 +152,10 @@ export default function NewPlantPage() {
                       key={m}
                       onClick={() => setMethod(m)}
                       className={cn(
-                        "rounded-full border px-3 py-1 text-sm capitalize transition-colors",
+                        "rounded-full border-2 px-4 py-2 text-sm font-medium capitalize transition-all",
                         method === m
                           ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
-                          : "border-border hover:bg-accent"
+                          : "border-border hover:bg-accent hover:text-foreground"
                       )}
                     >
                       {m}
@@ -167,14 +166,15 @@ export default function NewPlantPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Planted Date</label>
-                <Input type="date" value={plantedDate} onChange={(e) => setPlantedDate(e.target.value)} />
+                <Input type="date" value={plantedDate} onChange={(e) => setPlantedDate(e.target.value)} className="h-11" />
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep("search")}>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 h-11" onClick={() => setStep("search")}>
                   Back
                 </Button>
-                <Button className="flex-1" onClick={handleSubmit} disabled={!name.trim()}>
+                <Button className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={!name.trim()}>
+                  <Sprout className="size-4 mr-2" />
                   Add Plant
                 </Button>
               </div>

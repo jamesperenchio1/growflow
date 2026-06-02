@@ -14,12 +14,14 @@ export function PageShell({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "flex min-h-screen flex-col transition-all duration-300",
-          sidebarOpen ? "ml-64" : "ml-12"
+          sidebarOpen ? "ml-60" : "ml-16"
         )}
       >
         <Header />
         <main className="flex-1">
-          <div className="mx-auto max-w-7xl px-6 py-6">{children}</div>
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 page-enter">
+            {children}
+          </div>
         </main>
       </div>
     </div>
