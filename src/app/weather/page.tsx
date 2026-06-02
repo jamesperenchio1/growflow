@@ -1,17 +1,68 @@
 "use client";
 
-import { CloudSun, Droplets, Wind, Thermometer, Eye, Sunrise, Sunset, Gauge, RefreshCw, CloudRain, Sun, Cloud, MapPin } from "lucide-react";
+import { CloudSun, Droplets, Wind, Thermometer, Eye, Sunrise, Sunset, Gauge, RefreshCw, CloudRain, Sun, Cloud, MapPin, AlertTriangle } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertBanner } from "@/components/weather/alert-banner";
 import { useWeather } from "@/hooks/use-weather";
 import { getWeatherIcon, getWeatherDescription } from "@/lib/api/weather";
 import { useAppStore } from "@/store/app-store";
 import { cn } from "@/lib/utils";
 
+function getThaiSeason(date: Date): string {
+  const month = date.getMonth() + 1;
+  if (month >= 11 || month <= 2) return 'Cool Season';
+  if (month >= 3 && month <= 5) return 'Hot Season';
+  return 'Rainy Season';
+}
+
+const severityConfig = {
+  extreme: {
+    border: 'border-l-rose-500',
+    bg: 'bg-rose-50 dark:bg-rose-950/20',
+    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+    label: 'Extreme',
+    iconColor: 'text-rose-500',
+  },
+  high: {
+    border: 'border-l-amber-500',
+    bg: 'bg-amber-50 dark:bg-amber-950/20',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+    label: 'High',
+    iconColor: 'text-amber-500',
+  },
+  moderate: {
+    border: 'border-l-yellow-400',
+    bg: 'bg-yellow-50 dark:bg-yellow-950/20',
+    badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300',
+    label: 'Moderate',
+    iconColor: 'text-yellow-500',
+  },
+  low: {
+    border: 'border-l-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/20',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+    label: 'Low',
+    iconColor: 'text-blue-500',
+  },
+};
+
+const hazardMitigation: Record<string, string> = {
+  heatwave: 'Install shade cloth, increase watering frequency, mist during peak heat, avoid transplanting.',
+  flooding: 'Ensure drainage channels are clear, raise containers, harvest mature crops before storms.',
+  drought: 'Deep water early morning, apply thick mulch, avoid overhead watering to reduce evaporation.',
+  fungal_risk: 'Space plants for airflow, water at soil level, apply preventive copper spray, remove infected material.',
+  typhoon: 'Secure greenhouses, lower shade cloth, move containers to shelter, harvest mature produce.',
+  monsoon: 'Prioritize drainage, use raised beds, cover sensitive crops, reduce nitrogen fertilizer.',
+};
+
 export default function WeatherPage() {
   const { location } = useAppStore();
-  const { weather, loading, error, refresh } = useWeather();
+  const { weather, loading, error, refresh, alerts } = useWeather();
+
+  const season = getThaiSeason(new Date());
 
   return (
     <PageShell>
@@ -42,6 +93,9 @@ export default function WeatherPage() {
 
         {weather && (
           <>
+            {/* Alert Banner */}
+            {alerts.length > 0 && <AlertBanner alerts={alerts} />}
+
             <div className="grid gap-4 lg:grid-cols-3">
               {/* Main Weather Card */}
               <Card className="lg:col-span-2 border-0 shadow-sm gradient-blue">
@@ -123,6 +177,64 @@ export default function WeatherPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Weather Alerts Section */}
+            {alerts.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Weather Alerts</h3>
+                <div className="space-y-2">
+                  {alerts.map((alert, idx) => {
+                    const config = severityConfig[alert.severity];
+                    return (
+                      <Card
+                        key={`${alert.type}-${idx}`}
+                        className={cn('border-0 shadow-sm border-l-4', config.border, config.bg)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <AlertTriangle className={cn('size-5 shrink-0 mt-0.5', config.iconColor)} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-semibold text-sm">{alert.title}</h4>
+                                <Badge className={cn('text-[10px] px-1.5 py-0', config.badge)}>
+                                  {config.label}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-0.5">{alert.description}</p>
+                              <p className="text-xs mt-1.5 opacity-80">
+                                <span className="font-medium">Recommended action:</span> {alert.farmingAction}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <span className="font-medium">Mitigation tip:</span> {hazardMitigation[alert.type]}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Seasonal Context */}
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="icon-circle size-9 bg-emerald-100 dark:bg-emerald-950/30">
+                    <Sun className="size-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{season}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {season === 'Hot Season' && 'High heat stress risk — prioritize shade and watering.'}
+                      {season === 'Rainy Season' && 'Monsoon conditions — ensure drainage and watch for fungal issues.'}
+                      {season === 'Cool Season' && 'Optimal growing conditions for leafy greens and herbs.'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Hourly */}
             <div>

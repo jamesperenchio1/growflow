@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { db } from '@/lib/db';
 import type { Plant } from '@/types';
+import { useGardenStore, addEntityToGarden, removeEntityFromGarden, getGardenEntities } from '@/store/garden-store';
 
 interface UsePlantsResult {
   plants: Plant[];
@@ -14,16 +15,22 @@ interface UsePlantsResult {
 export function usePlants(): UsePlantsResult {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
+  const activeGardenId = useGardenStore((s) => s.activeGardenId);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const data = await db.plants.toArray();
-      setPlants(data);
+      if (activeGardenId) {
+        const entities = getGardenEntities(activeGardenId);
+        setPlants(data.filter((p) => entities.plantIds.includes(p.id!)));
+      } else {
+        setPlants(data);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeGardenId]);
 
   useEffect(() => {
     refresh();
@@ -36,6 +43,8 @@ export function usePlants(): UsePlantsResult {
       createdAt: now,
       updatedAt: now,
     });
+    const gardenId = useGardenStore.getState().activeGardenId ?? 'default';
+    addEntityToGarden(gardenId, 'plantIds', id as number);
     await db.logEntries.add({
       plantId: id,
       type: 'milestone',
@@ -44,7 +53,7 @@ export function usePlants(): UsePlantsResult {
       createdAt: now,
     });
     await refresh();
-    return id;
+    return id as number;
   }, [refresh]);
 
   const updatePlant = useCallback(async (id: number, changes: Partial<Plant>) => {
@@ -64,6 +73,8 @@ export function usePlants(): UsePlantsResult {
       await db.spacePlants.where('plantId').equals(id).delete();
       await db.yieldRecords.where('plantId').equals(id).delete();
     });
+    const gardenId = useGardenStore.getState().activeGardenId ?? 'default';
+    removeEntityFromGarden(gardenId, 'plantIds', id);
     await refresh();
   }, [refresh]);
 

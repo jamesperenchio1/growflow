@@ -45,7 +45,18 @@ import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useIoTDevices, DEVICE_TYPE_META } from "@/hooks/use-iot-devices";
 import type { IoTDevice } from "@/types";
+import type { DeviceReading } from "@/hooks/use-iot-devices";
 import { useSpaces } from "@/hooks/use-spaces";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 
 const typeIcons: Record<IoTDevice["type"], React.ReactNode> = {
   ph: <Droplets className="size-5" />,
@@ -73,28 +84,81 @@ function isOutOfRange(device: IoTDevice): boolean {
   return v < device.thresholdMin || v > device.thresholdMax;
 }
 
-function Sparkline({ values, alert }: { values: number[]; alert: boolean }) {
-  if (values.length === 0) return null;
-  const max = Math.max(...values, 0.01);
-  const min = Math.min(...values, 0);
-  const range = max - min || 1;
-  const bars = values.slice(-5);
+function IoTChart({
+  history,
+  thresholdMin,
+  thresholdMax,
+  alert,
+}: {
+  history: DeviceReading[];
+  thresholdMin?: number;
+  thresholdMax?: number;
+  alert: boolean;
+}) {
+  if (history.length === 0) return null;
+  const data = history.map((r) => ({
+    time: r.timestamp.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    value: r.value,
+  }));
+  const color = alert ? "hsl(340 75% 55%)" : "hsl(158 64% 42%)";
   return (
-    <div className="flex items-end gap-1 h-8">
-      {bars.map((v, i) => {
-        const height = Math.max(10, ((v - min) / range) * 100);
-        return (
-          <div
-            key={i}
-            className={cn(
-              "w-1.5 rounded-sm",
-              alert ? "bg-rose-400" : "bg-emerald-400"
-            )}
-            style={{ height: `${height}%` }}
+    <ResponsiveContainer width="100%" height={90}>
+      <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="hsl(var(--border))"
+          vertical={false}
+        />
+        <XAxis
+          dataKey="time"
+          tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+          axisLine={{ stroke: "hsl(var(--border))" }}
+          tickLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+          axisLine={false}
+          tickLine={false}
+          width={30}
+        />
+        <Tooltip
+          content={({ active, payload }) => {
+            if (!active || !payload || payload.length === 0) return null;
+            return (
+              <div className="rounded-md border bg-card px-2 py-1 shadow-sm">
+                <p className="text-xs font-medium">{payload[0]?.value}</p>
+              </div>
+            );
+          }}
+        />
+        {thresholdMin !== undefined && (
+          <ReferenceLine
+            y={thresholdMin}
+            stroke="hsl(38 92% 50%)"
+            strokeDasharray="3 3"
           />
-        );
-      })}
-    </div>
+        )}
+        {thresholdMax !== undefined && (
+          <ReferenceLine
+            y={thresholdMax}
+            stroke="hsl(38 92% 50%)"
+            strokeDasharray="3 3"
+          />
+        )}
+        <Line
+          type="monotone"
+          dataKey="value"
+          stroke={color}
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -376,7 +440,6 @@ export default function IoTPage() {
               const meta = DEVICE_TYPE_META[device.type];
               const alert = isOutOfRange(device);
               const deviceHistory = history.get(device.id!) ?? [];
-              const historyValues = deviceHistory.map((r) => r.value);
               return (
                 <Card
                   key={device.id}
@@ -426,7 +489,7 @@ export default function IoTPage() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     <div className="flex items-end justify-between">
                       <div>
                         <div className="text-3xl font-bold tracking-tight">
@@ -443,8 +506,13 @@ export default function IoTPage() {
                           )}
                         </div>
                       </div>
-                      <Sparkline values={historyValues} alert={alert} />
                     </div>
+                    <IoTChart
+                      history={deviceHistory}
+                      thresholdMin={device.thresholdMin ?? meta.min}
+                      thresholdMax={device.thresholdMax ?? meta.max}
+                      alert={alert}
+                    />
 
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>

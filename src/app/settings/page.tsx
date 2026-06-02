@@ -1,17 +1,67 @@
 "use client";
 
-import { MapPin, Ruler, Bell, AlertTriangle, Trash2, RefreshCw, Github } from "lucide-react";
+import { MapPin, Ruler, Bell, AlertTriangle, Trash2, RefreshCw, Github, Check, X, Send } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/store/app-store";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+
+function ToggleRow({
+  label,
+  enabled,
+  onToggle,
+  disabled,
+}: {
+  label: string;
+  enabled: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between rounded-xl border px-4 py-3",
+        disabled && "opacity-50 pointer-events-none"
+      )}
+    >
+      <span className="text-sm font-medium">{label}</span>
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        className={cn(
+          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
+          enabled ? "bg-emerald-600" : "bg-gray-200 dark:bg-gray-700"
+        )}
+        role="switch"
+        aria-checked={enabled}
+      >
+        <span
+          className={cn(
+            "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+            enabled ? "translate-x-6" : "translate-x-1"
+          )}
+        />
+      </button>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { location, units, thaiHazardsEnabled, setUnits, toggleThaiHazards, setLocation } = useAppStore();
   const [refreshing, setRefreshing] = useState(false);
+  const {
+    permission,
+    isSupported,
+    settings,
+    loading: notifLoading,
+    requestPermission,
+    send,
+    updateSettings,
+  } = useNotifications();
 
   const handleRefreshLocation = async () => {
     setRefreshing(true);
@@ -30,6 +80,15 @@ export default function SettingsPage() {
       setRefreshing(false);
     }
   };
+
+  const handleTestNotification = () => {
+    const ok = send("🌱 GrowFlow Test", "Your notifications are working!");
+    if (!ok) {
+      alert("Notification blocked. Please enable permission first.");
+    }
+  };
+
+  const canToggle = permission === "granted";
 
   return (
     <PageShell>
@@ -139,11 +198,96 @@ export default function SettingsPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <Badge variant="secondary">Coming soon</Badge>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Browser notification support will be added in a future update.
-              </p>
+            <CardContent className="space-y-4">
+              {!isSupported && (
+                <div className="rounded-xl border bg-red-50 dark:bg-red-950/20 px-4 py-3">
+                  <p className="text-sm text-red-700 dark:text-red-300 font-medium">Not Supported</p>
+                  <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-0.5">
+                    Your browser does not support push notifications.
+                  </p>
+                </div>
+              )}
+
+              {isSupported && (
+                <>
+                  <div className="flex items-center justify-between rounded-xl border px-4 py-3">
+                    <div>
+                      <span className="text-sm font-medium">Browser Permission</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {permission === "granted"
+                          ? "Notifications are enabled"
+                          : permission === "denied"
+                          ? "Notifications are blocked"
+                          : "Permission not requested yet"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {permission === "granted" ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 gap-1">
+                          <Check className="size-3" /> Granted
+                        </Badge>
+                      ) : permission === "denied" ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <X className="size-3" /> Denied
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Default</Badge>
+                      )}
+                      {permission !== "granted" && (
+                        <Button size="sm" onClick={requestPermission} className="bg-emerald-600 hover:bg-emerald-700">
+                          Allow
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <ToggleRow
+                    label="Enable notifications"
+                    enabled={settings.enabled}
+                    onToggle={() => updateSettings({ enabled: !settings.enabled })}
+                    disabled={!canToggle || notifLoading}
+                  />
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Alert Types</p>
+                    <ToggleRow
+                      label="Task reminders (daily at 8 AM)"
+                      enabled={settings.taskReminders}
+                      onToggle={() => updateSettings({ taskReminders: !settings.taskReminders })}
+                      disabled={!canToggle || !settings.enabled || notifLoading}
+                    />
+                    <ToggleRow
+                      label="Overdue task alerts"
+                      enabled={settings.overdueTaskAlerts}
+                      onToggle={() => updateSettings({ overdueTaskAlerts: !settings.overdueTaskAlerts })}
+                      disabled={!canToggle || !settings.enabled || notifLoading}
+                    />
+                    <ToggleRow
+                      label="IoT out-of-range alerts"
+                      enabled={settings.iotOutOfRangeAlerts}
+                      onToggle={() => updateSettings({ iotOutOfRangeAlerts: !settings.iotOutOfRangeAlerts })}
+                      disabled={!canToggle || !settings.enabled || notifLoading}
+                    />
+                    <ToggleRow
+                      label="Harvest window reminders"
+                      enabled={settings.harvestWindowReminders}
+                      onToggle={() => updateSettings({ harvestWindowReminders: !settings.harvestWindowReminders })}
+                      disabled={!canToggle || !settings.enabled || notifLoading}
+                    />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={handleTestNotification}
+                    disabled={!canToggle}
+                  >
+                    <Send className="size-3.5" />
+                    Test Notification
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

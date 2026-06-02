@@ -80,7 +80,7 @@ export interface Task {
   dueDate: Date;
   completed: boolean;
   completedAt?: Date;
-  recurring?: { intervalDays: number };
+  recurring?: { interval: number; unit: 'days' | 'weeks' | 'months' };
   createdAt: Date;
 }
 

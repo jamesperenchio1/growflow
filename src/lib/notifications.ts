@@ -40,6 +40,26 @@ export async function getTasks(filter: 'today' | 'week' | 'overdue' | 'completed
   }
 }
 
+export async function getUpcomingTasks(days: number): Promise<Task[]> {
+  const now = new Date();
+  const s = startOfDay(now);
+  const e = endOfDay(addDays(now, days));
+  return db.tasks
+    .where('completed')
+    .equals(0)
+    .and((t) => t.dueDate >= s && t.dueDate <= e)
+    .sortBy('dueDate');
+}
+
+export async function getOverdueTasks(): Promise<Task[]> {
+  const s = startOfDay(new Date());
+  return db.tasks
+    .where('completed')
+    .equals(0)
+    .and((t) => t.dueDate < s)
+    .sortBy('dueDate');
+}
+
 export async function completeTask(taskId: number): Promise<void> {
   await db.transaction('rw', [db.tasks, db.logEntries], async () => {
     const task = await db.tasks.get(taskId);
@@ -61,8 +81,14 @@ export async function completeTask(taskId: number): Promise<void> {
       });
     }
 
-    if (task.recurring?.intervalDays && task.recurring.intervalDays > 0) {
-      const nextDue = addDays(now, task.recurring.intervalDays);
+    if (task.recurring && task.recurring.interval > 0) {
+      const days =
+        task.recurring.unit === 'months'
+          ? task.recurring.interval * 30
+          : task.recurring.unit === 'weeks'
+            ? task.recurring.interval * 7
+            : task.recurring.interval;
+      const nextDue = addDays(now, days);
       await db.tasks.add({
         plantId: task.plantId,
         spaceId: task.spaceId,
@@ -107,7 +133,7 @@ export async function generateTasksForPlant(plant: Plant): Promise<void> {
     description: `Check soil moisture and water ${plant.name}${plant.variety ? ` (${plant.variety})` : ''}.`,
     dueDate: addDays(now, 1),
     completed: false,
-    recurring: { intervalDays: waterInterval },
+    recurring: { interval: waterInterval, unit: 'days' },
   });
 
   // Feed task
@@ -119,7 +145,7 @@ export async function generateTasksForPlant(plant: Plant): Promise<void> {
     description: `Apply nutrients for ${plant.name}.`,
     dueDate: addDays(now, feedInterval),
     completed: false,
-    recurring: { intervalDays: feedInterval },
+    recurring: { interval: feedInterval, unit: 'days' },
   });
 
   // Prune task (if applicable)
@@ -132,7 +158,7 @@ export async function generateTasksForPlant(plant: Plant): Promise<void> {
       description: `Inspect and prune ${plant.name} for healthy growth.`,
       dueDate: addDays(now, pruneInterval),
       completed: false,
-      recurring: { intervalDays: pruneInterval },
+      recurring: { interval: pruneInterval, unit: 'days' },
     });
   }
 

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchWeather } from '@/lib/api/weather';
-import type { WeatherData } from '@/types';
+import { evaluateThaiHazards } from '@/data/hazards';
+import type { WeatherData, ThaiHazard } from '@/types';
 import { useAppStore } from '@/store/app-store';
 
 const WEATHER_QUERY_KEY = 'weather';
@@ -10,10 +11,12 @@ interface UseWeatherResult {
   loading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
+  alerts: ThaiHazard[];
 }
 
 export function useWeather(): UseWeatherResult {
   const location = useAppStore((s) => s.location);
+  const thaiHazardsEnabled = useAppStore((s) => s.thaiHazardsEnabled);
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<WeatherData, Error>({
@@ -28,10 +31,22 @@ export function useWeather(): UseWeatherResult {
     await queryClient.invalidateQueries({ queryKey: [WEATHER_QUERY_KEY, location.lat, location.lon] });
   };
 
+  let alerts: ThaiHazard[] = [];
+  if (thaiHazardsEnabled && data) {
+    alerts = evaluateThaiHazards(
+      new Date(),
+      data.current.temperature,
+      data.current.precipitation,
+      data.current.humidity,
+      data.current.windSpeed
+    );
+  }
+
   return {
     weather: data ?? null,
     loading: isLoading,
     error: error ?? null,
     refresh,
+    alerts,
   };
 }

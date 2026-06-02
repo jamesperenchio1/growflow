@@ -1,6 +1,8 @@
 "use client";
 
-import { Leaf, Droplets, Sun, Thermometer, Sprout, Calendar, ArrowRight, Plus, Wind, CloudRain } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Leaf, Droplets, Sun, Thermometer, Sprout, Calendar, ArrowRight, Plus, Wind, Flower2, Package } from "lucide-react";
+import { AlertBanner } from "@/components/weather/alert-banner";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,9 +10,14 @@ import { Button } from "@/components/ui/button";
 import { usePlants } from "@/hooks/use-plants";
 import { useTasks } from "@/hooks/use-tasks";
 import { useWeather } from "@/hooks/use-weather";
+import { useGardenStore } from "@/store/garden-store";
 import { getWeatherIcon, getWeatherDescription } from "@/lib/api/weather";
 import { getMoonPhase, getMoonPhaseEmoji } from "@/lib/api/moon";
+import { useSuppliesStore } from "@/store/supplies-store";
+import { useOrderStore } from "@/store/order-store";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/db";
+import { GrowthChart } from "@/components/charts/growth-chart";
 
 function StatCard({
   title,
@@ -20,6 +27,8 @@ function StatCard({
   color,
   gradient,
   onClick,
+  hasAlert,
+  alertDot,
 }: {
   title: string;
   value: string;
@@ -28,6 +37,8 @@ function StatCard({
   color: string;
   gradient: string;
   onClick?: () => void;
+  hasAlert?: boolean;
+  alertDot?: boolean;
 }) {
   return (
     <Card
@@ -40,11 +51,19 @@ function StatCard({
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <div>
               <p className="text-3xl font-bold tracking-tight">{value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+              <p className={cn("text-xs mt-0.5", hasAlert ? "text-amber-700 dark:text-amber-300 font-medium" : "text-muted-foreground")}>{subtitle}</p>
             </div>
           </div>
-          <div className={cn("icon-circle size-10", color)}>
-            <Icon className="size-5 text-white" />
+          <div className="relative">
+            <div className={cn("icon-circle size-10", color)}>
+              <Icon className="size-5 text-white" />
+            </div>
+            {alertDot && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+              </span>
+            )}
           </div>
         </div>
       </CardContent>
@@ -56,8 +75,47 @@ export default function DashboardPage() {
   const router = useRouter();
   const { plants, loading: plantsLoading } = usePlants();
   const { tasks: todayTasks, loading: tasksLoading } = useTasks("today");
-  const { weather, loading: weatherLoading } = useWeather();
+  const { weather, loading: weatherLoading, alerts } = useWeather();
+  const { gardens, activeGardenId } = useGardenStore();
+  const activeGarden = gardens.find((g) => g.id === activeGardenId);
+  const { items: supplyItems } = useSuppliesStore();
+  const taskOrder = useOrderStore((s) => s.taskOrder);
   const moon = getMoonPhase(new Date());
+
+  const [growthData, setGrowthData] = useState<{ plantName: string; data: { date: string; value: number }[] } | null>(null);
+
+  useEffect(() => {
+    async function loadGrowthData() {
+      const allLogs = await db.logEntries.where('type').equals('measurement').toArray();
+      const heightLogs = allLogs.filter((l) => l.unit === 'cm' && l.value != null);
+      if (heightLogs.length === 0) return;
+      const byPlant = new Map<number, typeof heightLogs>();
+      for (const log of heightLogs) {
+        const arr = byPlant.get(log.plantId) ?? [];
+        arr.push(log);
+        byPlant.set(log.plantId, arr);
+      }
+      let latestPlantId = 0;
+      let latestDate = 0;
+      for (const [pid, logs] of byPlant) {
+        const maxDate = Math.max(...logs.map((l) => new Date(l.createdAt).getTime()));
+        if (maxDate > latestDate) {
+          latestDate = maxDate;
+          latestPlantId = pid;
+        }
+      }
+      const plant = await db.plants.get(latestPlantId);
+      if (!plant) return;
+      const logs = byPlant.get(latestPlantId) ?? [];
+      const data = logs
+        .map((l) => ({ date: new Date(l.createdAt).toISOString(), value: l.value! }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      setGrowthData({ plantName: plant.name, data });
+    }
+    loadGrowthData();
+  }, []);
+
+  const lowStockSupplies = supplyItems.filter((i) => i.quantity <= i.minThreshold);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -66,6 +124,7 @@ export default function DashboardPage() {
   });
 
   const overdueTasks = todayTasks.filter((t) => new Date(t.dueDate) < new Date() && !t.completed);
+  const hasWeatherAlerts = alerts.length > 0;
 
   return (
     <PageShell>
@@ -73,7 +132,15 @@ export default function DashboardPage() {
         {/* Greeting */}
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-sm text-muted-foreground font-medium">{today}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-sm text-muted-foreground font-medium">{today}</p>
+              {activeGarden && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                  <Flower2 className="size-3" />
+                  {activeGarden.name}
+                </span>
+              )}
+            </div>
             <h2 className="text-2xl font-bold tracking-tight mt-0.5">Welcome back</h2>
             <p className="text-sm text-muted-foreground mt-1">Here is what is happening in your garden today.</p>
           </div>
@@ -82,6 +149,11 @@ export default function DashboardPage() {
             Add Plant
           </Button>
         </div>
+
+        {/* Weather Alerts */}
+        {hasWeatherAlerts && (
+          <AlertBanner alerts={alerts} onViewAll={() => router.push("/weather")} />
+        )}
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -111,6 +183,7 @@ export default function DashboardPage() {
             color="bg-amber-500"
             gradient="gradient-amber"
             onClick={() => router.push("/weather")}
+            alertDot={hasWeatherAlerts}
           />
           <StatCard
             title="Moon Phase"
@@ -119,6 +192,17 @@ export default function DashboardPage() {
             icon={Sun}
             color="bg-rose-400"
             gradient="gradient-rose"
+          />
+          <StatCard
+            title="Supplies"
+            value={String(lowStockSupplies.length)}
+            subtitle={lowStockSupplies.length > 0 ? `${lowStockSupplies.length} low on stock` : "All stocked up"}
+            icon={Package}
+            color={lowStockSupplies.length > 0 ? "bg-amber-500" : "bg-emerald-500"}
+            gradient={lowStockSupplies.length > 0 ? "gradient-amber" : "gradient-emerald"}
+            hasAlert={lowStockSupplies.length > 0}
+            alertDot={lowStockSupplies.length > 0}
+            onClick={() => router.push("/supplies")}
           />
         </div>
 
@@ -132,9 +216,16 @@ export default function DashboardPage() {
                   <h3 className="font-semibold">Upcoming Tasks</h3>
                   <p className="text-xs text-muted-foreground">Your scheduled garden tasks</p>
                 </div>
-                <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => router.push("/tasks")}>
-                  View all <ArrowRight className="size-3" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {taskOrder.length > 0 && (
+                    <span className="text-[11px] text-emerald-600 font-medium">
+                      Reordered by priority
+                    </span>
+                  )}
+                  <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => router.push("/tasks")}>
+                    View all <ArrowRight className="size-3" />
+                  </Button>
+                </div>
               </div>
 
               {tasksLoading ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Leaf, ArrowLeft, Trash2, Sprout, Droplets, Sun, CalendarDays, StickyNote,
@@ -24,9 +24,19 @@ import { getNutrientTarget } from "@/data/nutrients";
 import { getYieldReference } from "@/data/yield-references";
 import { getMoonPhase } from "@/lib/api/moon";
 import { cn } from "@/lib/utils";
-import type { PlantReference } from "@/types";
+import type { PlantReference, Task } from "@/types";
+import { GrowthChart } from "@/components/charts/growth-chart";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 
-const TABS = ["overview", "journal", "photos", "yield"] as const;
+const TABS = ["overview", "journal", "photos", "yield", "charts"] as const;
 type TabId = (typeof TABS)[number];
 
 const tabLabels: Record<TabId, string> = {
@@ -34,6 +44,7 @@ const tabLabels: Record<TabId, string> = {
   journal: "Journal",
   photos: "Photos",
   yield: "Yield",
+  charts: "Charts",
 };
 
 const logTypeOptions = ["observation", "measurement", "treatment", "issue", "milestone"] as const;
@@ -98,6 +109,7 @@ function PlantDetailContent() {
   const { deletePlant } = usePlants();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [notes, setNotes] = useState("");
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
 
   // Dialog states
   const [logDialogOpen, setLogDialogOpen] = useState(false);
@@ -129,6 +141,11 @@ function PlantDetailContent() {
       setNotes(plant.notes ?? "");
     }
   }, [plant]);
+
+  useEffect(() => {
+    if (!plantId) return;
+    db.tasks.where('plantId').equals(plantId).toArray().then(setAllTasks);
+  }, [plantId]);
 
   const plantTasks = tasks.filter((t) => t.plantId === plantId);
   const daysSincePlanted = plant
@@ -192,6 +209,84 @@ function PlantDetailContent() {
 
   const totalYield = yields.reduce((s, r) => s + r.amountGrams, 0);
   const avgYield = yields.length > 0 ? Math.round(totalYield / yields.length) : 0;
+
+  const heightData = useMemo(() => {
+    return logs
+      .filter((l) => l.type === 'measurement' && l.unit === 'cm' && l.value != null)
+      .map((l) => ({
+        date: new Date(l.createdAt).toISOString(),
+        value: l.value!,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [logs]);
+
+  const phData = useMemo(() => {
+    return logs
+      .filter((l) => l.type === 'measurement' && l.unit?.toLowerCase() === 'ph' && l.value != null)
+      .map((l) => ({
+        date: new Date(l.createdAt).toISOString(),
+        value: l.value!,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [logs]);
+
+  const ecData = useMemo(() => {
+    return logs
+      .filter((l) => l.type === 'measurement' && (l.unit?.toLowerCase() === 'ec' || l.unit?.toLowerCase() === 'ms/cm') && l.value != null)
+      .map((l) => ({
+        date: new Date(l.createdAt).toISOString(),
+        value: l.value!,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [logs]);
+
+  const phEcChartData = useMemo(() => {
+    const map = new Map<string, { date: string; ph?: number; ec?: number }>();
+    for (const d of phData) {
+      const existing = map.get(d.date) ?? { date: d.date };
+      existing.ph = d.value;
+      map.set(d.date, existing);
+    }
+    for (const d of ecData) {
+      const existing = map.get(d.date) ?? { date: d.date };
+      existing.ec = d.value;
+      map.set(d.date, existing);
+    }
+    return Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [phData, ecData]);
+
+  const taskChartData = useMemo(() => {
+    const completedTasks = allTasks.filter((t) => t.completed && t.completedAt);
+    if (completedTasks.length === 0) return [];
+    const weeks = new Map<string, number>();
+    for (const task of completedTasks) {
+      const date = new Date(task.completedAt!);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const key = weekStart.toISOString().split('T')[0];
+      weeks.set(key, (weeks.get(key) || 0) + 1);
+    }
+    return Array.from(weeks.entries())
+      .map(([date, value]) => ({ date, value }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [allTasks]);
+
+  const yieldChartData = useMemo(() => {
+    return yields
+      .map((y) => ({
+        date: new Date(y.harvestedAt).toISOString(),
+        value: y.amountGrams,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [yields]);
+
+  const cumulativeYieldData = useMemo(() => {
+    let sum = 0;
+    return yieldChartData.map((d) => {
+      sum += d.value;
+      return { date: d.date, value: sum };
+    });
+  }, [yieldChartData]);
 
   if (loading) {
     return (
@@ -683,6 +778,181 @@ function PlantDetailContent() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </div>
+        )}
+
+        {/* Charts Tab */}
+        {activeTab === "charts" && (
+          <div className="space-y-5">
+            {heightData.length > 1 ? (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-5">
+                  <GrowthChart
+                    data={heightData}
+                    title="Plant Height Over Time"
+                    unit="cm"
+                    color="hsl(158 64% 42%)"
+                    type="area"
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="py-10 text-center">
+                  <p className="text-sm text-muted-foreground">No height measurements yet. Add measurement log entries with unit &quot;cm&quot; to see growth trends.</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {(phData.length > 0 || ecData.length > 0) && (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-5">
+                  <p className="text-sm font-medium mb-3">pH / EC History</p>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <LineChart data={phEcChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={{ stroke: "hsl(var(--border))" }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={40}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={50}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload) return null;
+                          return (
+                            <div className="rounded-lg border bg-card px-3 py-2 shadow-sm">
+                              <p className="text-xs text-muted-foreground mb-1">
+                                {new Date(label as string).toLocaleDateString()}
+                              </p>
+                              {payload.map((entry: any, i: number) => (
+                                <p key={i} className="text-sm font-medium" style={{ color: entry.color }}>
+                                  {entry.dataKey === 'ph' ? `pH: ${entry.value}` : `EC: ${entry.value} mS/cm`}
+                                </p>
+                              ))}
+                            </div>
+                          );
+                        }}
+                      />
+                      {phData.length > 0 && (
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="ph"
+                          name="pH"
+                          stroke="hsl(158 64% 42%)"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: "hsl(158 64% 42%)", strokeWidth: 0 }}
+                          activeDot={{ r: 5 }}
+                        />
+                      )}
+                      {ecData.length > 0 && (
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="ec"
+                          name="EC"
+                          stroke="hsl(215 20% 50%)"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: "hsl(215 20% 50%)", strokeWidth: 0 }}
+                          activeDot={{ r: 5 }}
+                        />
+                      )}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {plant.healthTags.length > 0 && (
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Health Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative py-4">
+                    <div className="absolute left-0 right-0 top-6 h-0.5 bg-border" />
+                    <div className="relative flex flex-wrap gap-x-6 gap-y-8">
+                      {plant.healthTags.map((tag, i) => (
+                        <div key={i} className="flex flex-col items-center gap-1.5 min-w-[60px]">
+                          <div
+                            className={cn(
+                              "size-3 rounded-full border-2 border-background z-10",
+                              tag.severity === "high" && "bg-red-500",
+                              tag.severity === "medium" && "bg-amber-500",
+                              tag.severity === "low" && "bg-emerald-500"
+                            )}
+                          />
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(tag.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                          <span className="text-xs font-medium text-center max-w-[80px] leading-tight">
+                            {tag.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {taskChartData.length > 0 && (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-5">
+                  <GrowthChart
+                    data={taskChartData}
+                    title="Tasks Completed Per Week"
+                    unit=""
+                    color="hsl(173 58% 39%)"
+                    type="bar"
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {yields.length > 0 && (
+              <>
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-5">
+                    <GrowthChart
+                      data={yieldChartData}
+                      title="Harvest History"
+                      unit="g"
+                      color="hsl(158 64% 42%)"
+                      type="bar"
+                    />
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-5">
+                    <GrowthChart
+                      data={cumulativeYieldData}
+                      title="Cumulative Yield"
+                      unit="g"
+                      color="hsl(158 64% 42%)"
+                      type="area"
+                    />
+                  </CardContent>
+                </Card>
+              </>
             )}
           </div>
         )}

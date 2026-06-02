@@ -1,159 +1,539 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Circle, Clock, Calendar, AlertCircle, Trash2, Sprout, Droplets, Scissors, Pickaxe, Beaker, Shovel, Bug } from "lucide-react";
-import { PageShell } from "@/components/layout/page-shell";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { db } from "@/lib/db";
+import { getUpcomingTasks, getOverdueTasks, completeTask } from "@/lib/notifications";
+import type { Task } from "@/types";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useTasks } from "@/hooks/use-tasks";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useOrderStore } from "@/store/order-store";
+import {
+  Plus,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Droplets,
+  Leaf,
+  Scissors,
+  Package,
+  Bug,
+  Repeat,
+  Sprout,
+  Calendar,
+  GripVertical,
+  ArrowUpDown,
+} from "lucide-react";
 
-type Filter = "today" | "week" | "overdue" | "completed";
-
-const filters: { value: Filter; label: string; icon: typeof Clock }[] = [
-  { value: "today", label: "Today", icon: Clock },
-  { value: "week", label: "This Week", icon: Calendar },
-  { value: "overdue", label: "Overdue", icon: AlertCircle },
-  { value: "completed", label: "Completed", icon: CheckCircle2 },
-];
-
-const taskTypeConfig: Record<string, { icon: typeof Sprout; color: string; bg: string }> = {
-  water: { icon: Droplets, color: "text-blue-600 dark:text-blue-300", bg: "bg-blue-50 dark:bg-blue-950/20" },
-  feed: { icon: Sprout, color: "text-emerald-600 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
-  prune: { icon: Scissors, color: "text-amber-600 dark:text-amber-300", bg: "bg-amber-50 dark:bg-amber-950/20" },
-  harvest: { icon: Pickaxe, color: "text-purple-600 dark:text-purple-300", bg: "bg-purple-50 dark:bg-purple-950/20" },
-  check_ph_ec: { icon: Beaker, color: "text-cyan-600 dark:text-cyan-300", bg: "bg-cyan-50 dark:bg-cyan-950/20" },
-  transplant: { icon: Shovel, color: "text-orange-600 dark:text-orange-300", bg: "bg-orange-50 dark:bg-orange-950/20" },
-  pest_control: { icon: Bug, color: "text-red-600 dark:text-red-300", bg: "bg-red-50 dark:bg-red-950/20" },
+const taskTypeMeta: Record<
+  Task["type"],
+  { label: string; icon: React.ReactNode; color: string }
+> = {
+  water: { label: "Water", icon: <Droplets className="size-4" />, color: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200" },
+  feed: { label: "Feed", icon: <Leaf className="size-4" />, color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
+  prune: { label: "Prune", icon: <Scissors className="size-4" />, color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  harvest: { label: "Harvest", icon: <Package className="size-4" />, color: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200" },
+  check_ph_ec: { label: "Check pH/EC", icon: <Sprout className="size-4" />, color: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200" },
+  transplant: { label: "Transplant", icon: <Sprout className="size-4" />, color: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200" },
+  pest_control: { label: "Pest Control", icon: <Bug className="size-4" />, color: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200" },
+  custom: { label: "Custom", icon: <Sprout className="size-4" />, color: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200" },
 };
 
+type TabKey = "upcoming" | "overdue" | "completed";
+type SortBy = "priority" | "dueDate" | "type";
+
+function applySort(tasks: Task[], sortBy: SortBy, taskOrder: number[]): Task[] {
+  const list = [...tasks];
+  if (sortBy === "dueDate") {
+    return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  }
+  if (sortBy === "type") {
+    return list.sort((a, b) => a.type.localeCompare(b.type));
+  }
+  // priority / custom order
+  const orderMap = new Map(taskOrder.map((id, idx) => [id, idx]));
+  return list.sort((a, b) => {
+    const aIdx = orderMap.get(a.id!);
+    const bIdx = orderMap.get(b.id!);
+    if (aIdx !== undefined && bIdx !== undefined) return aIdx - bIdx;
+    if (aIdx !== undefined) return -1;
+    if (bIdx !== undefined) return 1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
+}
+
 export default function TasksPage() {
-  const [filter, setFilter] = useState<Filter>("today");
-  const { tasks, loading, completeTask, deleteTask } = useTasks(filter);
+  const [upcoming, setUpcoming] = useState<Task[]>([]);
+  const [overdue, setOverdue] = useState<Task[]>([]);
+  const [completed, setCompleted] = useState<Task[]>([]);
+  const [tab, setTab] = useState<TabKey>("upcoming");
+  const [addOpen, setAddOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<SortBy>("dueDate");
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [dropTargetTaskId, setDropTargetTaskId] = useState<number | null>(null);
+
+  const taskOrder = useOrderStore((s) => s.taskOrder);
+  const setTaskOrder = useOrderStore((s) => s.setTaskOrder);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [type, setType] = useState<Task["type"]>("water");
+  const [plantId, setPlantId] = useState("");
+  const [recurring, setRecurring] = useState(false);
+  const [interval, setInterval] = useState("1");
+  const [unit, setUnit] = useState<"days" | "weeks" | "months">("days");
+
+  async function load() {
+    setLoading(true);
+    const [u, o, c] = await Promise.all([
+      getUpcomingTasks(7),
+      getOverdueTasks(),
+      db.tasks.where("completed").equals(1).reverse().limit(50).toArray(),
+    ]);
+    setUpcoming(u);
+    setOverdue(o);
+    setCompleted(c);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function handleComplete(task: Task) {
+    if (!task.id) return;
+    await completeTask(task.id);
+    await load();
+  }
+
+  async function handleAddTask() {
+    if (!title.trim() || !dueDate) return;
+    const task: Task = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      dueDate: new Date(dueDate),
+      type,
+      completed: false,
+      plantId: plantId ? Number(plantId) : undefined,
+      recurring: recurring
+        ? { interval: Number(interval) || 1, unit }
+        : undefined,
+      createdAt: new Date(),
+    };
+    const id = await db.tasks.add(task);
+    setTitle("");
+    setDescription("");
+    setDueDate("");
+    setPlantId("");
+    setRecurring(false);
+    setInterval("1");
+    setUnit("days");
+    setAddOpen(false);
+    // add new task to end of order
+    setTaskOrder([...taskOrder, id as number]);
+    await load();
+  }
+
+  function formatDate(d: Date) {
+    return new Date(d).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  function isOverdue(task: Task) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const due = new Date(task.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < now;
+  }
+
+  const getTabTasks = useCallback(
+    (key: TabKey) => {
+      if (key === "upcoming") return upcoming;
+      if (key === "overdue") return overdue;
+      return completed;
+    },
+    [upcoming, overdue, completed]
+  );
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, taskId: number) => {
+      if (sortBy !== "priority") {
+        e.preventDefault();
+        return;
+      }
+      setDraggedTaskId(taskId);
+      e.dataTransfer.setData("text/plain", String(taskId));
+      e.dataTransfer.effectAllowed = "move";
+    },
+    [sortBy]
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, taskId: number) => {
+      e.preventDefault();
+      if (sortBy !== "priority") return;
+      if (draggedTaskId !== null && draggedTaskId !== taskId) {
+        e.dataTransfer.dropEffect = "move";
+        setDropTargetTaskId(taskId);
+      }
+    },
+    [sortBy, draggedTaskId]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, targetTaskId: number) => {
+      e.preventDefault();
+      if (sortBy !== "priority" || draggedTaskId === null || draggedTaskId === targetTaskId) {
+        setDraggedTaskId(null);
+        setDropTargetTaskId(null);
+        return;
+      }
+
+      const currentTasks = getTabTasks(tab);
+      const visibleIds = currentTasks.map((t) => t.id!);
+
+      // Build new visible order
+      const newVisibleOrder = [...visibleIds];
+      const fromIdx = newVisibleOrder.indexOf(draggedTaskId);
+      const toIdx = newVisibleOrder.indexOf(targetTaskId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [removed] = newVisibleOrder.splice(fromIdx, 1);
+        newVisibleOrder.splice(toIdx, 0, removed);
+      }
+
+      // Rebuild global order: new visible order first, then remaining tasks in old relative order
+      const remainingIds = taskOrder.filter((id) => !visibleIds.includes(id));
+      const newOrder = [...newVisibleOrder, ...remainingIds];
+
+      // Ensure any tasks not yet in order are appended
+      const allIds = new Set([...newOrder, ...upcoming.map((t) => t.id!), ...overdue.map((t) => t.id!), ...completed.map((t) => t.id!)]);
+      const finalOrder = [...newOrder];
+      for (const id of allIds) {
+        if (!finalOrder.includes(id)) {
+          finalOrder.push(id);
+        }
+      }
+
+      setTaskOrder(finalOrder);
+      setDraggedTaskId(null);
+      setDropTargetTaskId(null);
+    },
+    [sortBy, draggedTaskId, tab, getTabTasks, taskOrder, setTaskOrder, upcoming, overdue, completed]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedTaskId(null);
+    setDropTargetTaskId(null);
+  }, []);
+
+  function renderTasks(tasks: Task[], tabKey: TabKey) {
+    if (tasks.length === 0) {
+      return (
+        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <Calendar className="mx-auto mb-2 size-8 opacity-50" />
+          {tabKey === "upcoming" && "No upcoming tasks."}
+          {tabKey === "overdue" && "No overdue tasks — great job!"}
+          {tabKey === "completed" && "No completed tasks yet."}
+        </div>
+      );
+    }
+
+    const sorted = applySort(tasks, sortBy, taskOrder);
+
+    return (
+      <div className="space-y-3">
+        {sorted.map((task) => {
+          const meta = taskTypeMeta[task.type] ?? taskTypeMeta.custom;
+          const overdue = isOverdue(task);
+          const isDragging = draggedTaskId === task.id;
+          const isDropTarget = dropTargetTaskId === task.id && draggedTaskId !== task.id;
+
+          return (
+            <Card
+              key={task.id}
+              draggable={sortBy === "priority"}
+              onDragStart={(e) => handleDragStart(e, task.id!)}
+              onDragOver={(e) => handleDragOver(e, task.id!)}
+              onDrop={(e) => handleDrop(e, task.id!)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "transition-shadow group",
+                overdue && "border-destructive/30",
+                isDragging && "opacity-50",
+                isDropTarget && "border-2 border-dashed border-emerald-400"
+              )}
+            >
+              <CardContent className="flex items-start gap-3 p-4">
+                {sortBy === "priority" && tabKey !== "completed" && (
+                  <div className="flex items-center self-center">
+                    <GripVertical
+                      className={cn(
+                        "size-4 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground",
+                        sortBy === "priority" && "opacity-100",
+                        sortBy !== "priority" && "opacity-0 group-hover:opacity-100 transition-opacity"
+                      )}
+                    />
+                  </div>
+                )}
+                {tabKey !== "completed" && (
+                  <Checkbox
+                    className="mt-1"
+                    checked={false}
+                    onCheckedChange={() => handleComplete(task)}
+                  />
+                )}
+                {tabKey === "completed" && (
+                  <CheckCircle2 className="mt-0.5 size-5 text-emerald-500" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{task.title}</span>
+                    <Badge
+                      variant="secondary"
+                      className={cn("text-[10px]", meta.color)}
+                    >
+                      {meta.icon}
+                      <span className="ml-1">{meta.label}</span>
+                    </Badge>
+                    {task.recurring && (
+                      <Badge variant="outline" className="text-[10px]">
+                        <Repeat className="mr-1 size-3" />
+                        Every {task.recurring.interval} {task.recurring.unit}
+                      </Badge>
+                    )}
+                  </div>
+                  {task.description && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {task.description}
+                    </p>
+                  )}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      {overdue ? (
+                        <AlertTriangle className="size-3 text-destructive" />
+                      ) : (
+                        <Clock className="size-3" />
+                      )}
+                      <span className={cn(overdue && "text-destructive font-medium")}>
+                        {formatDate(task.dueDate)}
+                        {overdue && " (overdue)"}
+                      </span>
+                    </span>
+                    {task.plantId && (
+                      <span className="flex items-center gap-1">
+                        <Sprout className="size-3" />
+                        Plant #{task.plantId}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
-    <PageShell>
-      <div className="space-y-5">
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Tasks</h2>
-          <p className="text-sm text-muted-foreground mt-1">Stay on top of your garden care schedule.</p>
+          <h1 className="text-xl font-semibold">Task Manager</h1>
+          <p className="text-sm text-muted-foreground">
+            Stay on top of garden care
+          </p>
         </div>
-
-        {/* Tabs */}
-        <div className="inline-flex rounded-xl bg-muted/60 p-1">
-          {filters.map((f) => {
-            const Icon = f.icon;
-            return (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
-                  filter === f.value
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon className="size-4" />
-                <span className="hidden sm:inline">{f.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="h-20 animate-pulse bg-muted border-0" />
-            ))}
-          </div>
-        ) : tasks.length === 0 ? (
-          <Card className="shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="icon-circle size-16 bg-emerald-100 dark:bg-emerald-950/30 mb-4">
-                <CheckCircle2 className="size-8 text-emerald-500" />
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogTrigger>
+            <Button size="sm">
+              <Plus className="mr-1 size-4" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New Task</DialogTitle>
+              <DialogDescription>
+                Schedule a gardening task
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 py-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="t-title">Title</Label>
+                <Input
+                  id="t-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Water tomatoes"
+                />
               </div>
-              <p className="text-base font-medium text-muted-foreground">
-                {filter === "completed" ? "No completed tasks yet" : `No ${filter} tasks`}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {filter === "today" && "All caught up for today!"}
-                {filter === "overdue" && "Nothing overdue — great job!"}
-                {filter === "week" && "No tasks scheduled this week"}
-                {filter === "completed" && "Complete a task to see it here"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2.5">
-            {tasks.map((task) => {
-              const config = taskTypeConfig[task.type] || taskTypeConfig.custom || { icon: Sprout, color: "text-slate-600", bg: "bg-slate-50" };
-              const Icon = config.icon;
-              return (
-                <Card
-                  key={task.id}
-                  className={cn("shadow-sm transition-colors hover:bg-accent/30", task.completed && "opacity-50")}
-                >
-                  <CardContent className="flex items-center gap-4 p-4">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 size-9"
-                      onClick={() => !task.completed && task.id && completeTask(task.id)}
-                      disabled={task.completed}
+              <div className="grid gap-1.5">
+                <Label htmlFor="t-desc">Description</Label>
+                <Textarea
+                  id="t-desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional details..."
+                  rows={2}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="t-due">Due date</Label>
+                  <Input
+                    id="t-due"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="t-type">Type</Label>
+                  <select
+                    id="t-type"
+                    value={type}
+                    onChange={(e) => setType(e.target.value as Task["type"])}
+                    className="h-9 rounded-md border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="water">Water</option>
+                    <option value="feed">Feed</option>
+                    <option value="prune">Prune</option>
+                    <option value="harvest">Harvest</option>
+                    <option value="pest_control">Pest Control</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="t-plant">Linked plant ID (optional)</Label>
+                <Input
+                  id="t-plant"
+                  type="number"
+                  value={plantId}
+                  onChange={(e) => setPlantId(e.target.value)}
+                  placeholder="e.g. 1"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="t-recurring"
+                  checked={recurring}
+                  onCheckedChange={(v) => setRecurring(!!v)}
+                />
+                <Label htmlFor="t-recurring" className="text-sm font-normal">
+                  Recurring task
+                </Label>
+              </div>
+              {recurring && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="t-int">Interval</Label>
+                    <Input
+                      id="t-int"
+                      type="number"
+                      min={1}
+                      value={interval}
+                      onChange={(e) => setInterval(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="t-unit">Unit</Label>
+                    <select
+                      id="t-unit"
+                      value={unit}
+                      onChange={(e) =>
+                        setUnit(e.target.value as "days" | "weeks" | "months")
+                      }
+                      className="h-9 rounded-md border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                     >
-                      {task.completed ? (
-                        <CheckCircle2 className="size-5 text-emerald-500" />
-                      ) : (
-                        <Circle className="size-5 text-muted-foreground/40 hover:text-emerald-500 transition-colors" />
-                      )}
-                    </Button>
+                      <option value="days">Days</option>
+                      <option value="weeks">Weeks</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddTask}>Create Task</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-                    <div className="min-w-0 flex-1">
-                      <p className={cn("text-sm font-medium", task.completed && "line-through text-muted-foreground")}>
-                        {task.title}
-                      </p>
-                      {task.description && (
-                        <p className="text-xs text-muted-foreground truncate">{task.description}</p>
-                      )}
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium", config.bg, config.color)}>
-                          <Icon className="size-3" />
-                          {task.type.replace("_", " ")}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {new Date(task.dueDate).toLocaleDateString(undefined, {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                        {task.recurring && (
-                          <Badge variant="outline" className="text-[10px] h-5">
-                            Every {task.recurring.intervalDays}d
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {!task.completed && task.id && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 size-8 text-muted-foreground/50 hover:text-destructive"
-                        onClick={() => deleteTask(task.id!)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+      <div className="mb-4 flex items-center gap-2">
+        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Sort by</span>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortBy)}
+          className="h-7 rounded-md border bg-background px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="priority">Priority (custom order)</option>
+          <option value="dueDate">Due Date</option>
+          <option value="type">Type</option>
+        </select>
+        {sortBy === "priority" && taskOrder.length > 0 && (
+          <span className="text-[11px] text-emerald-600 font-medium">
+            Reordered by priority
+          </span>
         )}
       </div>
-    </PageShell>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+        <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsTrigger value="upcoming">
+            Upcoming
+            {upcoming.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[10px]">
+                {upcoming.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="overdue">
+            Overdue
+            {overdue.length > 0 && (
+              <Badge variant="destructive" className="ml-1 text-[10px]">
+                {overdue.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upcoming">
+          {renderTasks(upcoming, "upcoming")}
+        </TabsContent>
+        <TabsContent value="overdue">
+          {renderTasks(overdue, "overdue")}
+        </TabsContent>
+        <TabsContent value="completed">
+          {renderTasks(completed, "completed")}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   ArrowRightLeft,
   Droplet,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { nutrientBrands, nutrientTargets } from "@/data/nutrients";
+import { useSuppliesStore } from "@/store/supplies-store";
 import type { GrowthStage } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -155,6 +157,27 @@ function calcPHAdjusterMl(currentPH: number, targetPH: number, volumeL: number):
   // ~1.5 mL per 10L per 1.0 pH unit
   const ml = Math.round((diff / 1.0) * 1.5 * (volumeL / 10) * 10) / 10;
   return { ml, direction, diff };
+}
+
+function SupplyHint({ brand, partName, amountMl }: { brand: string; partName: string; amountMl: number }) {
+  const { items } = useSuppliesStore();
+  const match = items.find((i) =>
+    i.category === "nutrient" &&
+    (i.name.toLowerCase().includes(brand.toLowerCase()) ||
+     i.name.toLowerCase().includes(partName.toLowerCase().replace("flora", "").trim()))
+  );
+  if (!match) return null;
+  const mixes = Math.floor(match.quantity / amountMl);
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 p-3 mt-3">
+      <Package className="size-4 text-blue-600 mt-0.5 shrink-0" />
+      <p className="text-xs text-blue-800 dark:text-blue-200">
+        You have <span className="font-semibold">{match.quantity} {match.unit}</span> of{" "}
+        <span className="font-semibold">{match.name}</span> remaining — enough for{" "}
+        <span className="font-semibold">{mixes} mix{mixes !== 1 ? "es" : ""}</span> at this volume.
+      </p>
+    </div>
+  );
 }
 
 export default function NutrientsPage() {
@@ -477,6 +500,14 @@ export default function NutrientsPage() {
                           ))}
                       </ol>
                     </div>
+
+                    <SupplyHint brand={nutrientBrand} partName={results.partALabel} amountMl={results.partA} />
+                    {results.partB > 0 && (
+                      <SupplyHint brand={nutrientBrand} partName={results.partBLabel} amountMl={results.partB} />
+                    )}
+                    {results.partC !== undefined && results.partC > 0 && results.partCLabel && (
+                      <SupplyHint brand={nutrientBrand} partName={results.partCLabel} amountMl={results.partC} />
+                    )}
                   </CardContent>
                 </Card>
               ) : (

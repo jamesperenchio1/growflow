@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { initDefaultGardenMappings } from "@/store/garden-store";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   const { sidebarOpen } = useAppStore();
+
+  useEffect(() => {
+    initDefaultGardenMappings();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">

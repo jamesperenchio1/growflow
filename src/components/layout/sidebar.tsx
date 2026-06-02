@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Flower2,
+  Package,
 } from "lucide-react";
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
   { label: "Nutrients", icon: FlaskConical, href: "/nutrients" },
   { label: "Systems", icon: Pipette, href: "/systems" },
   { label: "IoT", icon: Cpu, href: "/iot" },
+  { label: "Supplies", icon: Package, href: "/supplies" },
   { label: "Weather", icon: CloudSun, href: "/weather" },
   { label: "Learn", icon: BookOpen, href: "/learn" },
   { label: "Companions", icon: Flower2, href: "/companions" },

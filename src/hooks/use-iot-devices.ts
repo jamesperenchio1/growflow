@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/db';
 import type { IoTDevice } from '@/types';
+import { useGardenStore, addEntityToGarden, removeEntityFromGarden, getGardenEntities } from '@/store/garden-store';
 
 export interface DeviceReading {
   value: number;
@@ -68,16 +69,22 @@ export function useIoTDevices(): UseIoTDevicesResult {
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<Map<number, DeviceReading[]>>(new Map());
   const seededRef = useRef(false);
+  const activeGardenId = useGardenStore((s) => s.activeGardenId);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const data = await db.iotDevices.toArray();
-      setDevices(data);
+      if (activeGardenId) {
+        const entities = getGardenEntities(activeGardenId);
+        setDevices(data.filter((d) => entities.deviceIds.includes(d.id!)));
+      } else {
+        setDevices(data);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeGardenId]);
 
   useEffect(() => {
     refresh();
@@ -90,6 +97,7 @@ export function useIoTDevices(): UseIoTDevicesResult {
     if (count > 0) return;
 
     const now = new Date();
+    const gardenId = useGardenStore.getState().activeGardenId ?? 'default';
     const demos: Omit<IoTDevice, 'id'>[] = [
       {
         name: 'Main Tank pH',
@@ -123,6 +131,7 @@ export function useIoTDevices(): UseIoTDevicesResult {
     const newHistory = new Map<number, DeviceReading[]>();
     for (const demo of demos) {
       const id = await db.iotDevices.add(demo);
+      addEntityToGarden(gardenId, 'deviceIds', id as number);
       newHistory.set(id as number, seedHistory(demo.type));
     }
     setHistory(newHistory);
@@ -147,6 +156,8 @@ export function useIoTDevices(): UseIoTDevicesResult {
         enriched.lastReading = createReading(device.type);
       }
       const id = await db.iotDevices.add(enriched);
+      const gardenId = useGardenStore.getState().activeGardenId ?? 'default';
+      addEntityToGarden(gardenId, 'deviceIds', id as number);
       if (enriched.lastReading) {
         setHistory((prev) => {
           const next = new Map(prev);
@@ -176,6 +187,8 @@ export function useIoTDevices(): UseIoTDevicesResult {
         next.delete(id);
         return next;
       });
+      const gardenId = useGardenStore.getState().activeGardenId ?? 'default';
+      removeEntityFromGarden(gardenId, 'deviceIds', id);
       await refresh();
     },
     [refresh]

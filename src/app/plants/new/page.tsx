@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Leaf, Search, Plus, ArrowLeft, Sprout } from "lucide-react";
+import { Leaf, Search, Plus, ArrowLeft, Sprout, Flower2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePlants } from "@/hooks/use-plants";
+import { useGardenStore } from "@/store/garden-store";
 import { seedPlants } from "@/data/seed-plants";
 import { generateTasksForPlant } from "@/lib/notifications";
 import type { PlantCategory, GrowingMethod } from "@/types";
@@ -20,6 +21,8 @@ const methods: GrowingMethod[] = ["soil", "hydroponic", "aeroponic", "aquaponic"
 export default function NewPlantPage() {
   const router = useRouter();
   const { addPlant } = usePlants();
+  const { gardens, activeGardenId } = useGardenStore();
+  const activeGarden = gardens.find((g) => g.id === activeGardenId);
   const [query, setQuery] = useState("");
   const [step, setStep] = useState<"search" | "form">("search");
   const [name, setName] = useState("");
@@ -71,6 +74,14 @@ export default function NewPlantPage() {
           </Button>
           <h2 className="text-2xl font-bold tracking-tight">Add Plant</h2>
         </div>
+
+        {activeGarden && (
+          <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+            <Flower2 className="size-4" />
+            <span className="font-medium">Adding to:</span>
+            <span>{activeGarden.name}</span>
+          </div>
+        )}
 
         {step === "search" && (
           <>

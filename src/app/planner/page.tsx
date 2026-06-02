@@ -11,6 +11,8 @@ import {
   LayoutGrid,
   X,
   GripVertical,
+  Flower2,
+  ArrowUpDown,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,8 @@ import { Input } from "@/components/ui/input";
 import { useSpaces } from "@/hooks/use-spaces";
 import { usePlants } from "@/hooks/use-plants";
 import { useSpacePlants } from "@/hooks/use-space-plants";
+import { useGardenStore } from "@/store/garden-store";
+import { useOrderStore } from "@/store/order-store";
 import { cn } from "@/lib/utils";
 import type { SpaceType, Plant, SpacePlant } from "@/types";
 
@@ -287,13 +291,23 @@ function SpaceLayoutDialog({
   );
 }
 
+type SpaceSortBy = "custom" | "name" | "type" | "createdAt";
+
 export default function PlannerPage() {
   const router = useRouter();
-  const { spaces, loading, addSpace, deleteSpace } = useSpaces();
+  const [sortBy, setSortBy] = useState<SpaceSortBy>("createdAt");
+  const { spaces, loading, addSpace, deleteSpace } = useSpaces(sortBy);
   const { plants } = usePlants();
+  const { gardens, activeGardenId } = useGardenStore();
+  const activeGarden = gardens.find((g) => g.id === activeGardenId);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState<SpaceType>("raised_bed");
+  const [draggedSpaceId, setDraggedSpaceId] = useState<number | null>(null);
+  const [dropTargetSpaceId, setDropTargetSpaceId] = useState<number | null>(null);
+
+  const spaceOrder = useOrderStore((s) => s.spaceOrder);
+  const setSpaceOrder = useOrderStore((s) => s.setSpaceOrder);
 
   const [layoutSpaceId, setLayoutSpaceId] = useState<number | null>(null);
   const layoutSpace = useMemo(
@@ -309,15 +323,111 @@ export default function PlannerPage() {
     setOpen(false);
   };
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, spaceId: number) => {
+      if (sortBy !== "custom") {
+        e.preventDefault();
+        return;
+      }
+      setDraggedSpaceId(spaceId);
+      e.dataTransfer.setData("text/plain", String(spaceId));
+      e.dataTransfer.effectAllowed = "move";
+    },
+    [sortBy]
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, spaceId: number) => {
+      e.preventDefault();
+      if (sortBy !== "custom") return;
+      if (draggedSpaceId !== null && draggedSpaceId !== spaceId) {
+        e.dataTransfer.dropEffect = "move";
+        setDropTargetSpaceId(spaceId);
+      }
+    },
+    [sortBy, draggedSpaceId]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, targetSpaceId: number) => {
+      e.preventDefault();
+      if (sortBy !== "custom" || draggedSpaceId === null || draggedSpaceId === targetSpaceId) {
+        setDraggedSpaceId(null);
+        setDropTargetSpaceId(null);
+        return;
+      }
+
+      const visibleIds = spaces.map((s) => s.id!);
+      const newVisibleOrder = [...visibleIds];
+      const fromIdx = newVisibleOrder.indexOf(draggedSpaceId);
+      const toIdx = newVisibleOrder.indexOf(targetSpaceId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [removed] = newVisibleOrder.splice(fromIdx, 1);
+        newVisibleOrder.splice(toIdx, 0, removed);
+      }
+
+      const remainingIds = spaceOrder.filter((id) => !visibleIds.includes(id));
+      const newOrder = [...newVisibleOrder, ...remainingIds];
+
+      // ensure any missing ids are appended
+      const allIds = new Set([...newOrder, ...spaces.map((s) => s.id!)]);
+      const finalOrder = [...newOrder];
+      for (const id of allIds) {
+        if (!finalOrder.includes(id)) {
+          finalOrder.push(id);
+        }
+      }
+
+      setSpaceOrder(finalOrder);
+      setDraggedSpaceId(null);
+      setDropTargetSpaceId(null);
+    },
+    [sortBy, draggedSpaceId, spaces, spaceOrder, setSpaceOrder]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedSpaceId(null);
+    setDropTargetSpaceId(null);
+  }, []);
+
   return (
     <PageShell>
       <div className="space-y-5">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Planner</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage your growing spaces and layouts.
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-muted-foreground">
+                Manage your growing spaces and layouts.
+              </p>
+              {activeGarden && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                  <Flower2 className="size-3" />
+                  {activeGarden.name}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="size-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Sort by</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SpaceSortBy)}
+                className="h-8 rounded-md border bg-background px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="custom">Custom order</option>
+                <option value="name">Name</option>
+                <option value="type">Type</option>
+                <option value="createdAt">Created</option>
+              </select>
+              {sortBy === "custom" && spaceOrder.length > 0 && (
+                <span className="text-[11px] text-emerald-600 font-medium">
+                  Custom order
+                </span>
+              )}
+            </div>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -403,10 +513,31 @@ export default function PlannerPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {spaces.map((space) => {
               const spacePlants = plants.filter((p) => p.spaceId === space.id);
+              const isDragging = draggedSpaceId === space.id;
+              const isDropTarget = dropTargetSpaceId === space.id && draggedSpaceId !== space.id;
               return (
-                <Card key={space.id} className="card-hover shadow-sm">
+                <Card
+                  key={space.id}
+                  draggable={sortBy === "custom"}
+                  onDragStart={(e) => handleDragStart(e, space.id!)}
+                  onDragOver={(e) => handleDragOver(e, space.id!)}
+                  onDrop={(e) => handleDrop(e, space.id!)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    "card-hover shadow-sm group",
+                    isDragging && "opacity-50",
+                    isDropTarget && "border-2 border-dashed border-emerald-400"
+                  )}
+                >
                   <CardHeader className="flex flex-row items-start justify-between pb-3">
                     <div className="flex items-center gap-3">
+                      {sortBy === "custom" && (
+                        <GripVertical
+                          className={cn(
+                            "size-4 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground"
+                          )}
+                        />
+                      )}
                       <span className="text-2xl">{spaceTypeIcons[space.type]}</span>
                       <div>
                         <CardTitle className="text-base">{space.name}</CardTitle>
