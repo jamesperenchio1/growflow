@@ -1,17 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Grid3x3, Plus, Leaf, Trash2, Droplets } from "lucide-react";
+import {
+  Grid3x3,
+  Plus,
+  Leaf,
+  Trash2,
+  Droplets,
+  LayoutGrid,
+  X,
+  GripVertical,
+} from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useSpaces } from "@/hooks/use-spaces";
 import { usePlants } from "@/hooks/use-plants";
+import { useSpacePlants } from "@/hooks/use-space-plants";
 import { cn } from "@/lib/utils";
-import type { SpaceType } from "@/types";
+import type { SpaceType, Plant, SpacePlant } from "@/types";
 
 const spaceTypeLabels: Record<SpaceType, string> = {
   raised_bed: "Raised Bed",
@@ -55,6 +71,222 @@ const spaceTypes: SpaceType[] = [
   "kratky",
 ];
 
+function getGridSize(type: SpaceType): { cols: number; rows: number } {
+  if (type === "raised_bed") return { cols: 6, rows: 4 };
+  if (type === "container") return { cols: 2, rows: 2 };
+  return { cols: 4, rows: 2 };
+}
+
+function SpaceLayoutDialog({
+  spaceId,
+  spaceName,
+  spaceType,
+  open,
+  onOpenChange,
+  allPlants,
+}: {
+  spaceId: number;
+  spaceName: string;
+  spaceType: SpaceType;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  allPlants: Plant[];
+}) {
+  const { spacePlants, loading, addPlantToSpace, removePlantFromSpace, movePlantInSpace } =
+    useSpacePlants(spaceId);
+  const [draggingPlantId, setDraggingPlantId] = useState<number | null>(null);
+  const [removingId, setRemovingId] = useState<number | null>(null);
+
+  const { cols, rows } = getGridSize(spaceType);
+
+  const gridCells = useMemo(() => {
+    const cells: {
+      x: number;
+      y: number;
+      spacePlant?: SpacePlant;
+      plant?: Plant;
+    }[] = [];
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const sp = spacePlants.find((p) => p.x === x && p.y === y);
+        const plant = sp ? allPlants.find((p) => p.id === sp.plantId) : undefined;
+        cells.push({ x, y, spacePlant: sp, plant });
+      }
+    }
+    return cells;
+  }, [spacePlants, allPlants, cols, rows]);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, plantId: number, fromSpacePlantId?: number) => {
+      setDraggingPlantId(plantId);
+      e.dataTransfer.setData(
+        "application/growflow",
+        JSON.stringify({ plantId, fromSpacePlantId })
+      );
+      e.dataTransfer.effectAllowed = "move";
+    },
+    []
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent, x: number, y: number) => {
+      e.preventDefault();
+      const data = e.dataTransfer.getData("application/growflow");
+      if (!data) return;
+      try {
+        const { plantId, fromSpacePlantId } = JSON.parse(data);
+        const existing = spacePlants.find((p) => p.x === x && p.y === y);
+        if (existing) return; // cell occupied
+        if (fromSpacePlantId) {
+          await movePlantInSpace(fromSpacePlantId, x, y);
+        } else {
+          await addPlantToSpace(spaceId, plantId, x, y);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setDraggingPlantId(null);
+      }
+    },
+    [spacePlants, addPlantToSpace, movePlantInSpace, spaceId]
+  );
+
+  const availablePlants = allPlants.filter(
+    (p) => !spacePlants.some((sp) => sp.plantId === p.id)
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="flex items-center gap-2">
+            <LayoutGrid className="size-5 text-emerald-600" />
+            {spaceName} — Layout
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <div className="w-56 border-r border-border flex flex-col bg-muted/30">
+            <div className="px-4 py-3 text-sm font-medium text-muted-foreground border-b border-border">
+              Available Plants
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {availablePlants.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  No unused plants
+                </p>
+              ) : (
+                availablePlants.map((plant) => (
+                  <div
+                    key={plant.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, plant.id!)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-sm cursor-grab active:cursor-grabbing hover:shadow transition-shadow"
+                    )}
+                  >
+                    <GripVertical className="size-3 text-muted-foreground shrink-0" />
+                    <div className="icon-circle size-6 bg-emerald-50 dark:bg-emerald-950/30 shrink-0">
+                      <Leaf className="size-3 text-emerald-500" />
+                    </div>
+                    <span className="text-xs font-medium truncate">{plant.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Canvas */}
+          <div className="flex-1 overflow-auto p-6">
+            {loading ? (
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+                {Array.from({ length: cols * rows }).map((_, i) => (
+                  <div key={i} className="aspect-square animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+            ) : (
+              <div
+                className="grid gap-2"
+                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              >
+                {gridCells.map(({ x, y, spacePlant, plant }) => (
+                  <div
+                    key={`${x}-${y}`}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, x, y)}
+                    className={cn(
+                      "relative aspect-square rounded-xl border-2 border-dashed transition-colors flex items-center justify-center",
+                      spacePlant
+                        ? "border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20"
+                        : "border-border bg-background hover:border-emerald-300 hover:bg-emerald-50/30"
+                    )}
+                  >
+                    {plant ? (
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, plant.id!, spacePlant?.id)}
+                        onClick={() => setRemovingId(spacePlant?.id ?? null)}
+                        className="flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing select-none"
+                      >
+                        <div className="icon-circle size-10 bg-emerald-100 dark:bg-emerald-900/40">
+                          <Leaf className="size-5 text-emerald-600" />
+                        </div>
+                        <span className="text-[10px] font-medium text-emerald-800 dark:text-emerald-200 truncate max-w-[90%] px-1">
+                          {plant.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40">{x + 1},{y + 1}</span>
+                    )}
+
+                    {/* Remove popup */}
+                    {spacePlant && removingId === spacePlant.id && (
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-black/60 backdrop-blur-[1px]">
+                        <p className="text-xs text-white font-medium">Remove {plant?.name}?</p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-xs px-3"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await removePlantFromSpace(spacePlant.id!);
+                              setRemovingId(null);
+                            }}
+                          >
+                            <Trash2 className="size-3 mr-1" />
+                            Remove
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 text-xs px-3"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRemovingId(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function PlannerPage() {
   const router = useRouter();
   const { spaces, loading, addSpace, deleteSpace } = useSpaces();
@@ -62,6 +294,12 @@ export default function PlannerPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState<SpaceType>("raised_bed");
+
+  const [layoutSpaceId, setLayoutSpaceId] = useState<number | null>(null);
+  const layoutSpace = useMemo(
+    () => spaces.find((s) => s.id === layoutSpaceId),
+    [spaces, layoutSpaceId]
+  );
 
   const handleAdd = async () => {
     if (!name.trim()) return;
@@ -77,7 +315,9 @@ export default function PlannerPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Planner</h2>
-            <p className="text-sm text-muted-foreground mt-1">Manage your growing spaces and layouts.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage your growing spaces and layouts.
+            </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -92,11 +332,20 @@ export default function PlannerPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Name</label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bed A" />
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Name
+                  </label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Bed A"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="type" className="text-sm font-medium">Type</label>
+                  <label htmlFor="type" className="text-sm font-medium">
+                    Type
+                  </label>
                   <select
                     id="type"
                     value={type}
@@ -110,7 +359,11 @@ export default function PlannerPage() {
                     ))}
                   </select>
                 </div>
-                <Button onClick={handleAdd} disabled={!name.trim()} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  onClick={handleAdd}
+                  disabled={!name.trim()}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
                   Create Space
                 </Button>
               </div>
@@ -130,11 +383,17 @@ export default function PlannerPage() {
               <div className="icon-circle size-16 bg-emerald-100 dark:bg-emerald-950/30 mb-4">
                 <Grid3x3 className="size-8 text-emerald-500" />
               </div>
-              <p className="text-base font-medium text-muted-foreground">No growing spaces yet</p>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Add your first bed, container, or hydro system to start planning your garden layout
+              <p className="text-base font-medium text-muted-foreground">
+                No growing spaces yet
               </p>
-              <Button className="mt-4 gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => setOpen(true)}>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                Add your first bed, container, or hydro system to start planning your
+                garden layout
+              </p>
+              <Button
+                className="mt-4 gap-2 bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => setOpen(true)}
+              >
                 <Plus className="size-4" />
                 Add Your First Space
               </Button>
@@ -151,24 +410,42 @@ export default function PlannerPage() {
                       <span className="text-2xl">{spaceTypeIcons[space.type]}</span>
                       <div>
                         <CardTitle className="text-base">{space.name}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{spaceTypeLabels[space.type]}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {spaceTypeLabels[space.type]}
+                        </p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-muted-foreground/50 hover:text-destructive"
-                      onClick={() => space.id && deleteSpace(space.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => setLayoutSpaceId(space.id!)}
+                      >
+                        <LayoutGrid className="size-3.5 mr-1" />
+                        Layout
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground/50 hover:text-destructive"
+                        onClick={() => space.id && deleteSpace(space.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {spacePlants.length === 0 ? (
                       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-8 text-center">
                         <Leaf className="size-6 text-muted-foreground/30 mb-2" />
                         <p className="text-xs text-muted-foreground">No plants yet</p>
-                        <Button variant="ghost" size="sm" className="mt-2 text-xs h-7 text-emerald-600" onClick={() => router.push("/plants/new")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-xs h-7 text-emerald-600"
+                          onClick={() => router.push("/plants/new")}
+                        >
                           Add Plant
                         </Button>
                       </div>
@@ -178,7 +455,9 @@ export default function PlannerPage() {
                           <div
                             key={plant.id}
                             className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-colors hover:bg-accent/40 cursor-pointer"
-                            onClick={() => router.push(`/plants/detail?id=${plant.id}`)}
+                            onClick={() =>
+                              router.push(`/plants/detail?id=${plant.id}`)
+                            }
                           >
                             <div className="icon-circle size-8 bg-emerald-50 dark:bg-emerald-950/30">
                               <Leaf className="size-4 text-emerald-500" />
@@ -198,6 +477,19 @@ export default function PlannerPage() {
           </div>
         )}
       </div>
+
+      {layoutSpace && layoutSpace.id && (
+        <SpaceLayoutDialog
+          spaceId={layoutSpace.id}
+          spaceName={layoutSpace.name}
+          spaceType={layoutSpace.type}
+          open={layoutSpaceId !== null}
+          onOpenChange={(open) => {
+            if (!open) setLayoutSpaceId(null);
+          }}
+          allPlants={plants}
+        />
+      )}
     </PageShell>
   );
 }
