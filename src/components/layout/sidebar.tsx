@@ -15,9 +15,11 @@ import {
   Cpu,
   CloudSun,
   BookOpen,
+  Bug,
   Settings,
   ChevronLeft,
   ChevronRight,
+  Flower2,
 } from "lucide-react";
 
 const navItems = [
@@ -31,6 +33,8 @@ const navItems = [
   { label: "IoT", icon: Cpu, href: "/iot" },
   { label: "Weather", icon: CloudSun, href: "/weather" },
   { label: "Learn", icon: BookOpen, href: "/learn" },
+  { label: "Companions", icon: Flower2, href: "/companions" },
+  { label: "Pests", icon: Bug, href: "/pests" },
   { label: "Settings", icon: Settings, href: "/settings" },
 ];
 

@@ -41,7 +41,7 @@ export async function getTasks(filter: 'today' | 'week' | 'overdue' | 'completed
 }
 
 export async function completeTask(taskId: number): Promise<void> {
-  await db.transaction('rw', db.tasks, async () => {
+  await db.transaction('rw', [db.tasks, db.logEntries], async () => {
     const task = await db.tasks.get(taskId);
     if (!task) return;
 
@@ -50,6 +50,16 @@ export async function completeTask(taskId: number): Promise<void> {
       completed: true,
       completedAt: now,
     });
+
+    if (task.plantId) {
+      await db.logEntries.add({
+        plantId: task.plantId,
+        type: 'observation',
+        title: `Task completed: ${task.title}`,
+        description: task.description || `Completed ${task.type.replace('_', ' ')} task.`,
+        createdAt: now,
+      });
+    }
 
     if (task.recurring?.intervalDays && task.recurring.intervalDays > 0) {
       const nextDue = addDays(now, task.recurring.intervalDays);

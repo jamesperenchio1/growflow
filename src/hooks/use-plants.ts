@@ -36,6 +36,13 @@ export function usePlants(): UsePlantsResult {
       createdAt: now,
       updatedAt: now,
     });
+    await db.logEntries.add({
+      plantId: id,
+      type: 'milestone',
+      title: 'Plant added to garden',
+      description: `${plant.name} was added to the garden.`,
+      createdAt: now,
+    });
     await refresh();
     return id;
   }, [refresh]);

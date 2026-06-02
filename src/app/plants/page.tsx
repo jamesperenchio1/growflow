@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Leaf, Search, Plus, Droplets, Sun, ArrowRight } from "lucide-react";
+import { Leaf, Search, Plus, Droplets, Sun, BookOpen } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePlants } from "@/hooks/use-plants";
+import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 const categories = ["all", "vegetable", "herb", "fruit", "flower"] as const;
@@ -25,6 +26,14 @@ export default function PlantsPage() {
   const { plants, loading } = usePlants();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<(typeof categories)[number]>("all");
+  const [plantsWithLogs, setPlantsWithLogs] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    db.logEntries.toArray().then((logs) => {
+      const ids = new Set(logs.map((l) => l.plantId));
+      setPlantsWithLogs(ids);
+    });
+  }, [plants]);
 
   const filtered = plants.filter((p) => {
     const matchesQuery =
@@ -115,8 +124,12 @@ export default function PlantsPage() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="icon-circle size-11 bg-emerald-50 dark:bg-emerald-950/30">
-                        <Leaf className="size-5 text-emerald-500" />
+                      <div className="icon-circle size-11 bg-emerald-50 dark:bg-emerald-950/30 overflow-hidden">
+                        {plant.photoUrl ? (
+                          <img src={plant.photoUrl} alt={plant.name} className="size-11 object-cover" />
+                        ) : (
+                          <Leaf className="size-5 text-emerald-500" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold truncate">{plant.name}</p>
@@ -125,9 +138,17 @@ export default function PlantsPage() {
                         )}
                       </div>
                     </div>
-                    <Badge variant="secondary" className={cn("text-xs capitalize shrink-0", categoryColors[plant.category])}>
-                      {plant.category}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <Badge variant="secondary" className={cn("text-xs capitalize shrink-0", categoryColors[plant.category])}>
+                        {plant.category}
+                      </Badge>
+                      {plant.id !== undefined && plantsWithLogs.has(plant.id) && (
+                        <Badge variant="outline" className="text-[10px] h-5 gap-1">
+                          <BookOpen className="size-3" />
+                          Journal
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
