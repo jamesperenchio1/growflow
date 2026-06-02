@@ -1,0 +1,64 @@
+import { useCallback, useEffect, useState } from 'react';
+import { db } from '@/lib/db';
+import type { Plant } from '@/types';
+
+interface UsePlantsResult {
+  plants: Plant[];
+  loading: boolean;
+  addPlant: (plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>) => Promise<number>;
+  updatePlant: (id: number, changes: Partial<Plant>) => Promise<void>;
+  deletePlant: (id: number) => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+export function usePlants(): UsePlantsResult {
+  const [plants, setPlants] = useState<Plant[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await db.plants.toArray();
+      setPlants(data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const addPlant = useCallback(async (plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date();
+    const id = await db.plants.add({
+      ...plant,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await refresh();
+    return id;
+  }, [refresh]);
+
+  const updatePlant = useCallback(async (id: number, changes: Partial<Plant>) => {
+    await db.plants.update(id, {
+      ...changes,
+      updatedAt: new Date(),
+    });
+    await refresh();
+  }, [refresh]);
+
+  const deletePlant = useCallback(async (id: number) => {
+    await db.transaction('rw', [db.plants, db.photos, db.logEntries, db.tasks, db.spacePlants, db.yieldRecords], async () => {
+      await db.plants.delete(id);
+      await db.photos.where('plantId').equals(id).delete();
+      await db.logEntries.where('plantId').equals(id).delete();
+      await db.tasks.where('plantId').equals(id).delete();
+      await db.spacePlants.where('plantId').equals(id).delete();
+      await db.yieldRecords.where('plantId').equals(id).delete();
+    });
+    await refresh();
+  }, [refresh]);
+
+  return { plants, loading, addPlant, updatePlant, deletePlant, refresh };
+}
